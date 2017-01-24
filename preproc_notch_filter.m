@@ -1,11 +1,21 @@
 function dataout = preproc_notch_filter(data,params)
+%% Notch filter data 
+%
+% input: 
+% data matrix 
+% params.notch_filter  - matrix with filter to notch 
+% params.filterorder   - scalar with butterworth filter order 
+% params.delta_notch   - 
 
-[n1_b, n1_a] = butter(3,[58 62]  /   (params.sr/2),'stop');   %60hz
-[n2_b, n2_a] = butter(3,[118 122]/ (params.sr/2),'stop');     %120hz
-[n3_b, n3_a] = butter(3,[178 182]/ (params.sr/2),'stop');     %180hz
-
-dataout = filtfilt(n1_b, n1_a, data);    %notch out at 60
-dataout = filtfilt(n2_b, n2_a, dataout); %notch out at 120
-dataout = filtfilt(n3_b, n3_a, dataout); %notch out at 180
-
+for f = 1:length(params.notch_filter) % loop on filters to notch 
+    % filter params 
+    n = params.filterorder; 
+    filterange = [params.notch_filter(f) - params.delta_notch ...
+                  params.notch_filter(f) + params.delta_notch]; 
+    % creat filter 
+    [b, a ]  =butter(n, filterange / (params.sr/2),'stop'); 
+    % filter data 
+    data  = filtfilt(b,a,data); 
+end
+dataout = data; 
 end

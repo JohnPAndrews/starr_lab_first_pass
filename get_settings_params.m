@@ -5,10 +5,15 @@ function [settings, params] = get_settings_params()
 params.cond2analyze    = 'rest'; % condition to analyze 
 params.channel2anlyze  = 1; 
 
-% preproces settings 
-params.lowcutoff       = 1; 
+% preprocess settings 
+params.lowcutoff       = 3; 
 params.highcutoff      = 800; 
 params.msec2trim       = 5000; %trim first x msec of raw data file 
+
+% filters 
+params.filterorder     = 3; % order of Butterworth filter 
+params.notch_filter    = [60,120,180]; % frequencies to notch filter 
+params.delta_notch     = 2; % spacing around notch filter to use (e.g. for 60Hz notch between 58-62]; 
 %% settings 
 settings.raw_data_fold = fullfile('..','..','Raw_Data','Ryder'); 
 settings.visits        = {'10_day','3_week','1_month','2_month_visit','3_month',...

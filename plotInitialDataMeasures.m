@@ -17,13 +17,13 @@ save_figure(hfig,['02_',settings.patientid],settings.figout,settings.figformat);
 
 %% remove DC offset and low freq
 filt_data = preproc_dc_offset_high_pass(data_trim,params);
-hfig      = plot_data_freq_domain(filt_data,params.sr,'High passed + DC offset data');
+hfig      = plot_data_freq_domain(filt_data,params.sr,'High passed + DC offset');
 save_figure(hfig,['03_',settings.patientid],settings.figout,settings.figformat);  
 
 
 %% notch filter around 60Hz, 120Hz and 180Hz
 notcddat  = preproc_notch_filter(filt_data,params);
-hfig      = plot_data_freq_domain(notcddat,params.sr,'High pass + notch + DC offset');
+hfig      = plot_data_freq_domain(notcddat,params.sr,'High passed + DC offset + notch');
 save_figure(hfig,['04_',settings.patientid],settings.figout,settings.figformat);  
 
 
