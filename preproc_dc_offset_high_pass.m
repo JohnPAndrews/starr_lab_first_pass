@@ -21,7 +21,7 @@ datafilt     = filtfilt(b,a,data); %filter all signal<1hz using butterworth
 % Rs = 10;                % Ripple at stop band
 % 
 % [n, Wn] = buttord(Wp, Ws, Rp, Rs);     % Get order and omega vector
-% [z, p, k] = butter(n, Wn, 'high'); % Design filter accordingly
+% [z, p, k] = butter(n, Wn, 'high');     % Design filter accordingly
 % [sos, g] = zp2sos(z, p, k);            % Convert to state matrix
 % Hd = dfilt.df2sos(sos, g);             % Create the filter object
 % 

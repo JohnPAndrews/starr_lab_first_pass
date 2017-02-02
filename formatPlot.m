@@ -1,4 +1,4 @@
-function formatPlot(htitle,hxlabel,hylabel,hxrule,hyrule)
+function formatPlot(htitle,hxlabel,hylabel,hxrule,hyrule,hplot)
 % given handels to different plot elements, format the plot 
 fontuse = 'Helvetica'; 
 fontsizeruler    = 15; 
@@ -20,4 +20,5 @@ hylabel.FontName = fontuse;
 hyrule.FontSize  = fontsizeruler; 
 hyrule.FontName  = fontuse; 
 
+hplot.LineWidth = 3; 
 end

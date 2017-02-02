@@ -1,4 +1,5 @@
-function hfig = plot_data_time_domain(data,sr,figtitle,xtitle,ytitle)
+function hfig = plot_data_time_domain(data,params,figtitle,xtitle,ytitle)
+sr = params.sr; 
 hfig = figure('Position',[680   441   719   537],'Visible','on'); 
 hplot = plot(data); 
 
@@ -16,5 +17,5 @@ hyrule = ax.YAxis;
 hxrule = ax.XAxis; 
 
 % format plot - size and fonts 
-formatPlot(htitle,hxlabel,hylabel,hxrule,hyrule)
+formatPlot(htitle,hxlabel,hylabel,hxrule,hyrule,hplot)
 end
