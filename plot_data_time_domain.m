@@ -1,4 +1,7 @@
 function hfig = plot_data_time_domain(data,params,figtitle,xtitle,ytitle)
+%% This funciton plots data in the time domain
+
+% inputs = data is a matrix 
 sr = params.sr; 
 hfig = figure('Position',[680   441   719   537],'Visible','on'); 
 hplot = plot(data); 

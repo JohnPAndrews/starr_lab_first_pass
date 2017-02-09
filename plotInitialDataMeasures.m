@@ -24,10 +24,8 @@ save_figure(hfig,['03_',settings.patientid],settings.figout,settings.figformat);
 %% notch filter around 60Hz, 120Hz and 180Hz
 notcddat  = preproc_notch_filter(filt_data,params);
 hfig      = plot_data_freq_domain(notcddat,params,'High passed + DC offset + notch');
-
 save_figure(hfig,['04_',settings.patientid],settings.figout,settings.figformat);  
-
-
  
-% plot ESRP 
+%% plot ESRP 
+
 end
