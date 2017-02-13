@@ -35,7 +35,7 @@ for c = 1:size(raw,2)
         fnm = sprintf('notes%0.3d',cnt); cnt = cnt + 1; 
         visitdetail.(fnm) = raw{sessionrow,c};
     else
-        visitdetail.(genvarname(raw{headerow,c})) = raw{sessionrow,c};
+        visitdetail.(genvarname(lower(raw{headerow,c}))) = raw{sessionrow,c};
     end
     
 end

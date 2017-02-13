@@ -53,8 +53,9 @@ for p = 1:length(Patients) % loop on patients
         Visits(v).uniqueDatesDetail        = sortedVisits{v,4};
         Visits(v).mostfreqdate             = sortedVisits{v,5};
         Visits(v).daysSinceImplant         = datenum(Visits(v).visitDate) - datenum(implantdate) +1; % to include present day;
-        Visits(v).visitCategory            = getVisitCategory(Visits(v).daysSinceImplant);
-        Visits(v).xlsfilename              = sortedVisits{v,6}
+        Visits(v).visitCategory            = [sprintf('v%0.2d_',v) getVisitCategory(Visits(v).daysSinceImplant)];
+        Visits(v).usevist                  = 1; % to fill out manually in json (change to zero to not include
+        Visits(v).xlsfilename              = sortedVisits{v,6};
     end
     
     % options for json

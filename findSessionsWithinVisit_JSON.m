@@ -56,9 +56,9 @@ for f = 1:length(ffnew) % loop on files (not including raw files)
         session.rawfilename = []; % empty if unused 
     end
     
-    session.patientcondition = []; 
-    session.stimon = []; 
-    session.task = []; 
+    session.Medication = []; 
+    session.StimOn = []; 
+    session.ConditionTask = []; 
     
     % try and extract informaion from .xls file if it exists 
     if ~isempty(visitstruc.xlsfilename) 
@@ -67,7 +67,24 @@ for f = 1:length(ffnew) % loop on files (not including raw files)
         if isempty(sessionDetailsFromXLS) % this session doe not exit in xls 
             session.sessionDetailsFromXLS = 'sessionNotExistInXLS';
         else
+            % for debugging run this - it will open relevant .xls filename 
+            % system(['open -a "Microsoft Excel" ' visitstruc.xlsfilename])
             session.sessionDetailsFromXLS = sessionDetailsFromXLS;
+            if isfield(sessionDetailsFromXLS,'meds')
+                session.Medication = sessionDetailsFromXLS.meds;
+            end
+            if isfield(sessionDetailsFromXLS,'patientactivity')
+                session.ConditionTask = sessionDetailsFromXLS.patientactivity;
+            end
+            if isfield(sessionDetailsFromXLS,'medication')
+                session.Medication = sessionDetailsFromXLS.medication;
+            end
+            if isfield(sessionDetailsFromXLS,'condition0x2Ftask')
+                session.ConditionTask = sessionDetailsFromXLS.condition0x2Ftask;
+            end
+            if isfield(sessionDetailsFromXLS,'condition')
+                session.ConditionTask = sessionDetailsFromXLS.condition;
+            end
         end
     else
         session.sessionDetailsFromXLS = 'XLS_DoesNotExist'; 
