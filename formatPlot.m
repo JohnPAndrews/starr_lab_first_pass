@@ -20,5 +20,7 @@ hylabel.FontName = fontuse;
 hyrule.FontSize  = fontsizeruler; 
 hyrule.FontName  = fontuse; 
 
-hplot.LineWidth = 3; 
+try
+    hplot.LineWidth = 3;
+end
 end

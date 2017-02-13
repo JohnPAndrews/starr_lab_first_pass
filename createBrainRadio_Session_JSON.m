@@ -15,15 +15,22 @@ function createBrainRadio_Session_JSON()
 % output - a JSON is saved within each visit directory with details bout
 % this visit 
 
-rootdir  = '/Volumes/Starr_Lab_H/Starr_Lab/BR_raw_data'; 
+% location for the data 
+
+rootdir  = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_raw_data'; 
+% add toolboxes: 
+addpath(genpath(pwd));
 % get subject json 
 fnmsave = fullfile(rootdir, 'patients-^^^^-.json'); 
 Patients = loadjson(fnmsave,'SimplifyCell',1); % this is how to read the data back in.
-for p = 1:lengt     h(Patients)
+for p = 1:length(Patients)
     visitfnm = fullfile(rootdir, Patients(p).PatientFolderName,'visit-details-^^^^-.json'); 
     visits = loadjson(visitfnm,'SimplifyCell',1); % this is how to read the data back in.
     for v = 1:length(visits) % loop on each visit to find sesssions 
-        
+        start = tic; 
+        findSessionsWithinVisit_JSON(rootdir, visits(v)); 
+        fprintf('Patient %s Visit %s in %f secs\n',...
+            Patients(p).PatientFolderName, visits(v).visitFolderName,toc(start))
     end
 end
 

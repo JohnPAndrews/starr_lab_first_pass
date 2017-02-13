@@ -27,5 +27,6 @@ hfig      = plot_data_freq_domain(notcddat,params,'High passed + DC offset + not
 save_figure(hfig,['04_',settings.patientid],settings.figout,settings.figformat);  
  
 %% plot ESRP 
-
+hfig = plot_data_time_domain_spectrogram(notcddat,params,'High passed + DC offset + notch');
+save_figure(hfig,['05_',settings.patientid],settings.figout,settings.figformat);  
 end

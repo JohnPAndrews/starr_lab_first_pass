@@ -14,17 +14,16 @@ function createBrainRadioSubject_JSON()
 
 % add brain radio patients to json 
 % addPatient(struct2concatenate, name, id) 
-rootdir  = '/Volumes/Starr_Lab_H/Starr_Lab/BR_raw_data'; 
+rootdir  = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_raw_data';
 Patients = addPatient([],      'Kilinski_brpd01','brpd_01'); 
-Patients = addPatient(Patients,'Carges',         'brpd_02'); 
-Patients = addPatient(Patients,'Ryder',          'brpd_04'); 
+Patients = addPatient(Patients,'Ryder',          'brpd_03'); 
+Patients = addPatient(Patients,'Carges',         'brpd_04'); 
 Patients = addPatient(Patients,'Hathaway',       'brpd_05'); 
 Patients = addPatient(Patients,'Egger',          'brpd_06'); 
 Patients = addPatient(Patients,'Kizer',          'brpd_07'); 
 Patients = addPatient(Patients,'robinson',       'brpd_09'); 
 % options for json 
 opt.ForceRootName = 0; 
-rootdir = '/Volumes/Starr_Lab_H/Starr_Lab/BR_raw_data'; 
 fnmsave = fullfile(rootdir, 'patients-^^^^-.json'); 
 savejson('',Patients,fnmsave); 
 

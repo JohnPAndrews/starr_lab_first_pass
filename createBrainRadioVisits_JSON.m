@@ -12,7 +12,8 @@ function createBrainRadioVisits_JSON()
 % relies on this toolbox:
 
 % find visit folders
-rootdir = '/Volumes/Starr_Lab_H/Starr_Lab/BR_raw_data';
+global rootdir
+rootdir  = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_raw_data';
 fnmsave = fullfile(rootdir, 'patients-^^^^-.json');
 Patients  = loadjson(fnmsave,'SimplifyCell',1); % this is how to read the data back in.
 %% find all the visits and create a json for each visit
@@ -30,9 +31,9 @@ for p = 1:length(Patients) % loop on patients
         [unqdates, mostfreqdate] = findUniqueDatesInVisit(txtfilesfound);
         if ~isempty(unqdates)
             if v == 1 % make new struc for first visit
-                Visits = addVisit([],foldername, unqdates, mostfreqdate);
+                Visits = addVisit([],foldername, unqdates, mostfreqdate,visitfldrs{v});
             else
-                Visits = addVisit(Visits,foldername, unqdates, mostfreqdate);
+                Visits = addVisit(Visits,foldername, unqdates, mostfreqdate,visitfldrs{v});
             end
         end
     end
@@ -53,6 +54,7 @@ for p = 1:length(Patients) % loop on patients
         Visits(v).mostfreqdate             = sortedVisits{v,5};
         Visits(v).daysSinceImplant         = datenum(Visits(v).visitDate) - datenum(implantdate) +1; % to include present day;
         Visits(v).visitCategory            = getVisitCategory(Visits(v).daysSinceImplant);
+        Visits(v).xlsfilename              = sortedVisits{v,6}
     end
     
     % options for json
@@ -63,18 +65,30 @@ end
 
 end
 
-function Ps = addVisit(Ps, name,uniqueDates, mostfreqdate)
+function Ps = addVisit(Ps, name,uniqueDates, mostfreqdate,visitfldr)
 visits.visitFolderName                = name;
 if isempty(uniqueDates) % if no unique dates, there is no data, here can be videos, EEG data? etc.
     visits.visitDate = [];
     visits.uniqueDatesFoundInFolder = [];
     visits.uniqueDatesDetail = [];
     visits.mostfreqdate = [];
+    visits.xlsfile     = []; % xls / xlsm filename describing data; 
 else
     visits.visitDate                = uniqueDates{end};
     visits.uniqueDatesFoundInFolder = length(uniqueDates);
     visits.uniqueDatesDetail        = uniqueDates;
     visits.mostfreqdate = mostfreqdate;
+    % find .xls / .xlsm file detailing visit 
+    if strcmp(visitfldr, '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_raw_data/Ryder/3_month')
+        x = 2; 
+    end
+    ff = findFilesBVQX(visitfldr,'*.xls*');
+    if isempty(ff)
+            visits.xlsfilename = [];
+    else
+        visits.xlsfilename =  ff{1};
+    end
+
 end
 
 Ps = [Ps, visits];
