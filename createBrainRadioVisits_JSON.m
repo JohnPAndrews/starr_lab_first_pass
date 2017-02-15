@@ -104,7 +104,9 @@ elseif 16 < daysSinceImplant && daysSinceImplant < 25
     visitCategory = '03_wek';
 elseif 26 < daysSinceImplant && daysSinceImplant< 40
     visitCategory = '01_mnt';
-elseif 41 < daysSinceImplant && daysSinceImplant< 120
+elseif 41 < daysSinceImplant && daysSinceImplant< 70
+    visitCategory = '02_mnt';
+elseif 71 < daysSinceImplant && daysSinceImplant< 120
     visitCategory = '03_mnt';
 elseif 160 < daysSinceImplant && daysSinceImplant< 200
     visitCategory = '06_mnt';

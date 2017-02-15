@@ -15,7 +15,7 @@ params.noisefloor      = 100; % noise floor of medtronic system in Htz (disregar
 
 % filters 
 params.filterorder     = 3; % order of Butterworth filter 
-params.notch_filter    = [60,120,180]; % frequencies to notch filter 
+params.notch_filter    = [60]; % frequencies to notch filter 
 params.delta_notch     = 2; % spacing around notch filter to use (e.g. for 60Hz notch between 58-62]; 
 
 % plotting 

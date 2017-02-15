@@ -26,4 +26,5 @@ for p = 1:length(Patients)
        
     end
 end
+tout = struct2table(pout);
 end
