@@ -9,7 +9,7 @@ switch params.plottype
         NFFT=1024;
         X=fft(data,NFFT);
         Px=X.*conj(X)/(NFFT*L); %Power of each freq components
-        fftOut = Px(1:NFFT/2); 
+        fftOut = log10(Px(1:NFFT/2)); 
         f=params.sr*(0:NFFT/2-1)/NFFT;
         
 %         fftOut = fft(data);
@@ -25,8 +25,8 @@ switch params.plottype
         [fftOut,f] = pwelch(data,ones(segLength,1),0,NFFT,params.sr,'power');
         %[fftOut,f] = pwelch(data,512,256,1024,params.sr); % from nicki 
         % plot only stuff below noise floor:
-        f = f(f<params.noisefloor); 
-        fftOut = fftOut(f<params.noisefloor); 
+        f = f(f<params.noisefloor);  % frequncies 
+        fftOut = log10(fftOut(f<params.noisefloor)); 
 end
 
 % plot:
@@ -35,7 +35,7 @@ hplot  = plot(f,fftOut);
 % set titels and get handels
 htitle = title(figtitle);
 xtitle = 'Frequency (Hz)';
-ytitle = 'Power spectrum (dBW)';
+ytitle = 'log_1_0 Power spectrum (dBW)';
 hxlabel = xlabel(xtitle);
 hylabel = ylabel(ytitle);
 
@@ -44,5 +44,5 @@ hyrule = ax.YAxis;
 hxrule = ax.XAxis;
 
 % format plot - size and fonts
-formatPlot(htitle,hxlabel,hylabel,hxrule,hyrule,hplot)
+formatPlot(htitle,hxlabel,hylabel,hxrule,hyrule,hplot);
 end

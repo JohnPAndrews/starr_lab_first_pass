@@ -20,15 +20,22 @@ function createBrainRadio_Session_JSON()
 rootdir  = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_raw_data'; 
 % add toolboxes: 
 addpath(genpath(pwd));
+
 % get subject json 
 fnmsave = fullfile(rootdir, 'patients-^^^^-.json'); 
 Patients = loadjson(fnmsave,'SimplifyCell',1); % this is how to read the data back in.
+fid = fopen(fullfile(pwd,'problems','problems_all.txt'),'w+'); % create a place to report problems in filling out some fields 
 for p = 1:length(Patients)
     visitfnm = fullfile(rootdir, Patients(p).PatientFolderName,'visit-details-^^^^-.json'); 
     visits = loadjson(visitfnm,'SimplifyCell',1); % this is how to read the data back in.
+    % create a place to report problems
+    if ~exist(fullfile(pwd,'problems'),'dir')
+        mkdir(fullfile(pwd,'problems'));
+    end
+%     fid = fopen(fullfile(pwd,'problems',sprintf('problems_%s.txt',visitstruc.patientcode)),'w+');
     for v = 1:length(visits) % loop on each visit to find sesssions 
         start = tic; 
-        findSessionsWithinVisit_JSON(rootdir, visits(v)); 
+        findSessionsWithinVisit_JSON(rootdir, visits(v),fid); 
         fprintf('Patient %s Visit %s in %f secs\n',...
             Patients(p).PatientFolderName, visits(v).visitFolderName,toc(start))
     end

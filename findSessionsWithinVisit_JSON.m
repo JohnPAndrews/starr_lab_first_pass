@@ -1,4 +1,4 @@
-function findSessionsWithinVisit_JSON(rootdir, visitstruc)
+function findSessionsWithinVisit_JSON(rootdir, visitstruc,fid)
 %% This function looks for Brain radio sessions within a specific visit.
 %  ouutput: it writes a json file for each session (within the folder
 %  with the data for that session) with the following information:
@@ -31,6 +31,9 @@ ffs = findFilesBVQX(visitfolder,'brpd*MR*.txt');
 % The raw files do not have the built in filters
 % (.5 hz high pass and 400 hz lfp).
 %  They are downloaded directly off the battery (active PC + S).
+
+% XXXX 
+% but this disregards cases in which ONLY raw files exist....
 cnt = 1;
 for f = 1:length(ffs)
     [pn,fn] = fileparts(ffs{f});
@@ -42,24 +45,30 @@ for f = 1:length(ffs)
 end
 
 % either load existing jsons, or create them from scratch...
-loadjsons = 0;
+loadjsons = 1;
 if loadjsons
     %% this works on existing jsons
     ffs = findFilesBVQX(visitfolder,'*session*.json');
     for i  = 1:length(ffs)
         session = loadjson(ffs{i},'SimplifyCell',1); % this is how to read the data back in.
+        session.visitCategory = visitstruc.visitCategory(5:end); 
+        session.usevist       = visitstruc.usevisit; 
+        session.patientcode   = visitstruc.patientcode; 
         if ~strcmp(session.sessionDetailsFromXLS,'XLS_DoesNotExist')
             if ~strcmp(session.sessionDetailsFromXLS,'sessionNotExistInXLS')
                 sessionDetailsFromXLS = session.sessionDetailsFromXLS;
-                % possible synonyms for 'Medication' status:
+                %% possible synonyms for 'Medication' status / complete missing information :
                 medsynms = {'meds','medication'};
                 for snm = 1:length(medsynms)
                     if isfield(sessionDetailsFromXLS,medsynms{snm})
                         session.Medication = sessionDetailsFromXLS.(medsynms{snm});
                     end
                 end
+                % a lot of other individual use cases.... 
+                session = parseMedicationStatus(fid,session);
+                
                 %
-                % possible synonyms for 'Condition / Task' :
+                %% possible synonyms for 'Condition / Task' / fixing condition task inconsistencies :
                 consynms = {'patientactivity','patientActivity','task',...
                     'condition0x2Ftask','con','condition','condiiton'};
                 for snm = 1:length(consynms)
@@ -82,7 +91,7 @@ if loadjsons
             end
         end
     end
-    %%
+
 else
     %% this creates jsons from scratch but takes more time
     % loop on all raw data files found within visit
@@ -238,5 +247,67 @@ for e = 1:length(wordsMarkExclude)
             conditionnotes = ConditionTask;
         end
     end
+end
+end
+
+function session = parseMedicationStatus(fid,session)
+if isempty(session.Medication) || sum(isnan(session.Medication))
+    if strcmp(session.visitCategory,'OR_day')
+        session.Medication = 'off';
+    end
+    if strcmp(session.patientcode,'brpd_01') && strcmp(session.visitCategory,'10_day')
+        % this is specific visit when this patient was on.
+        % in general this patient didn't tolerate being off
+        % a lot.
+        session.Medication = 'on';
+        session.MedicationNotes = 'This patient did not tolerate being off meds';
+    end
+    if  strcmp(session.patientcode,'brpd_01') && strcmp(session.visitCategory,'03_mnt')
+        session.Medication = 'on';
+        session.MedicationNotes = 'This patient did not tolerate being off meds';
+    end
+    if  strcmp(session.patientcode,'brpd_01') && strcmp(session.visitCategory,'01_yer')
+        session.Medication = 'on';
+        session.MedicationNotes = 'This patient did not tolerate being off meds';
+    end
+    if strfind(session.RawConditionTask,'off meds')
+        session.Medication = 'off';
+    end
+    if strfind(session.RawConditionTask,'on meds')
+        session.Medication = 'on';
+    end
+    if isfield(session.sessionDetailsFromXLS,'otherNotes')
+        if strfind(session.sessionDetailsFromXLS.otherNotes,'on meds')
+            session.Medication = 'on';
+        end
+        if strfind(session.sessionDetailsFromXLS.otherNotes,'off meds')
+            session.Medication = 'off';
+        end
+    end
+    if strfind(session.fulltemppath,'off_meds')
+        session.Medication = 'off';
+    end
+    if strfind(session.fulltemppath,'on_meds')
+        session.Medication = 'on';
+    end
+    if isfield(session.sessionDetailsFromXLS,'symptoms')
+        if strfind(session.sessionDetailsFromXLS.symptoms,'took meds')
+            session.Medication = 'on';
+        end
+    end
+end
+if isempty(session.Medication) || sum(isnan(session.Medication))
+%     if strcmp(session.ConditionTask,'rest')
+               fprintf(fid,'%s \t %s\t  %s \t %s \t %s \t %s \t %s \t %s \t %s \t     \n', ...
+                [session.filename '.txt'],...
+                session.fulltemppath,...
+                session.patientcode,...
+                session.visitCategory,...
+                session.recordingdate,...
+                session.Medication,...
+                session.MedicationNotes,...
+                session.ConditionTask,...
+                session.ConditionNotes);
+%     end
 end
 end

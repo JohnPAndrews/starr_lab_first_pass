@@ -54,10 +54,19 @@ for p = 1:length(Patients) % loop on patients
         Visits(v).mostfreqdate             = sortedVisits{v,5};
         Visits(v).daysSinceImplant         = datenum(Visits(v).visitDate) - datenum(implantdate) +1; % to include present day;
         Visits(v).visitCategory            = [sprintf('v%0.2d_',v) getVisitCategory(Visits(v).daysSinceImplant)];
-        Visits(v).usevist                  = 1; % to fill out manually in json (change to zero to not include
+        Visits(v).usevisit                  = 1; % to fill out manually in json (change to zero to not include
         Visits(v).xlsfilename              = sortedVisits{v,6};
     end
-    
+    % fix some mistakes manually, mostly in visit categories 
+    Visits = fixMistakesManually(Visits);
+    % reorder the fields within each visit so its more redable: 
+    fieldnamesused = fieldnames(Visits);
+    for s = 1:length(fieldnamesused)
+        fprintf('%0.2d\t %s\n',s,fieldnamesused{s});
+    end
+    neworder = [     1    10     2     9    11     7     8     3     4     5     6]; 
+    Visits = orderfields(Visits,neworder);
+
     % options for json
     opt.ForceRootName = 0;
     savejson('',Visits,fullfile(patientdir, 'visit-details-^^^^-.json'));
@@ -130,5 +139,107 @@ else
     end
     unqdates = unique(alldates);
     mostfreqdate = mode_cell_array(alldates);
+end
+end
+
+function Visits = fixMistakesManually(Visits)
+switch Visits(1).patientcode
+    case 'brpd_01'
+        for v = 1:length(Visits)
+            if strcmp(Visits(v).visitCategory,'v03_000000')
+                Visits(v).visitCategory = 'v03_03_wek';
+            end
+            if strcmp(Visits(v).visitCategory,'v06_000000')
+                Visits(v).visitCategory = 'v06_03_mnt';
+            end
+            if strcmp(Visits(v).visitCategory,'v09_000000')
+                Visits(v).visitCategory = 'v09_02_yer';
+            end
+        end
+    case 'brpd_02'
+    case 'brpd_03'
+        for v = 1:length(Visits)
+            if strcmp(Visits(v).visitCategory,'v02_OR_day')
+                Visits(v).visitCategory = 'v02_predis';
+            end
+            if strcmp(Visits(v).visitCategory,'v10_02_yer')
+                Visits(v).usevisit = 0;
+            end
+            if strcmp(Visits(v).visitCategory,'v12_000000')
+                Visits(v).usevisit = 0;
+            end
+        end
+    case 'brpd_04'
+        for v = 1:length(Visits)
+            if strcmp(Visits(v).visitCategory,'v02_OR_day')
+                Visits(v).visitCategory = 'v02_predis';
+            end
+            if strcmp(Visits(v).visitCategory,'v11_02_yer')
+                Visits(v).visitCategory = 'v11_000000';
+                Visits(v).usevisit = 0; 
+            end
+        end
+    case 'brpd_05'
+        for v = 1:length(Visits)
+            if strcmp(Visits(v).visitCategory,'v02_OR_day')
+                Visits(v).visitCategory = 'v02_predis';
+            end
+            if strcmp(Visits(v).visitCategory,'v07_03_mnt')
+                Visits(v).visitCategory = 'v07_02_mnt';
+            end
+            if strcmp(Visits(v).visitCategory,'v11_01_yer')
+                Visits(v).visitCategory = 'v11_000000';
+                Visits(v).usevisit = 0;
+            end
+             if strcmp(Visits(v).visitCategory,'v12_02_yer')
+                Visits(v).visitCategory = 'v12_01_yer';
+             end
+            if strcmp(Visits(v).visitCategory,'v13_02_yer')
+                Visits(v).visitCategory = 'v13_000000';
+                Visits(v).usevisit = 0;
+            end
+             if strcmp(Visits(v).visitCategory,'v14_000000')
+                Visits(v).visitCategory = 'v12_02_yer';
+             end
+        end
+    case 'brpd_06'
+        for v = 1:length(Visits)
+            if strcmp(Visits(v).visitCategory,'v02_OR_day')
+                Visits(v).visitCategory = 'v02_predis';
+            end
+            if strcmp(Visits(v).visitCategory,'v05_000000')
+                Visits(v).visitCategory = 'v05_000000';
+                Visits(v).usevisit = 0; 
+            end
+            if strcmp(Visits(v).visitCategory,'v06_01_mnt')
+                Visits(v).visitCategory = 'v06_03_wek';
+                Visits(v).usevisit = 1; 
+            end
+            if strcmp(Visits(v).visitCategory,'v08_02_mnt')
+                Visits(v).visitCategory = 'v06_01_mnt';
+            end
+            if strcmp(Visits(v).visitCategory,'v09_000000')
+                Visits(v).visitCategory = 'v09_02_mnt';
+            end
+        end
+    case 'brpd_07'
+        for v = 1:length(Visits)
+            if strcmp(Visits(v).visitCategory,'v02_OR_day')
+                Visits(v).visitCategory = 'v02_predis';
+            end
+              if strcmp(Visits(v).visitCategory,'v04_000000')
+                Visits(v).visitCategory = 'v02_03_wek';
+            end
+        end
+    case 'brpd_08'
+    case 'brpd_09'
+        for v = 1:length(Visits)
+            if strcmp(Visits(v).visitCategory,'v02_OR_day')
+                Visits(v).visitCategory = 'v02_predis';
+            end
+            if strcmp(Visits(v).visitCategory,'v05_000000')
+                Visits(v).visitCategory = 'v05_01_mnt';
+            end
+        end
 end
 end
