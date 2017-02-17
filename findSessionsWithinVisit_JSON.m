@@ -295,6 +295,26 @@ if isempty(session.Medication) || sum(isnan(session.Medication))
             session.Medication = 'on';
         end
     end
+    if strfind(session.fulltemppath,'nexus_e_test_10_13') & strcmp(session.patientcode,'brpd_05')
+        session.Medication = 'on';
+        session.MedicationNotes = 'Nicki Swann verbal communication';
+    end
+    if strcmp(session.visitCategory, 'homeRecording')
+        session.Medication = 'unknown'; 
+        session.MedicationNotes = 'home recording status unknown'; 
+    end
+    if strcmp(session.visitCategory,'01_mnt')
+        session.Medication = 'off';
+        session.MedicationNotes = 'during one month visits, medication usually off'; 
+    end
+    if strcmp(session.visitCategory,'02_mnt')
+        session.Medication = 'off';
+        session.MedicationNotes = 'during one month visits, medication usually off'; 
+    end
+    if strcmp(session.visitCategory,'03_mnt')
+        session.Medication = 'off';
+        session.MedicationNotes = 'during one month visits, medication usually off'; 
+    end
 end
 if isempty(session.Medication) || sum(isnan(session.Medication))
 %     if strcmp(session.ConditionTask,'rest')
