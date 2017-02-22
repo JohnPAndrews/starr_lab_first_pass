@@ -1,4 +1,4 @@
-function determineIfStimOnAllSessions()
+function determineIfStimOnAllSessions(varargin)
 %% This function tries to automatically detect if stim is and if file from session should be analyzed
 % use with caution....
 rootdir  = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_raw_data';
@@ -6,7 +6,7 @@ resultsdir   = fullfile('..','results','rest_mat_files_validation');
 [settings, params] = get_settings_params();
 mkdir(resultsdir);
 %% save all data to temp results dir to make loading files faster
-savedatatomat = 0; % save all data to temp directory...
+savedatatomat = 1; % save all data to temp directory...
 if savedatatomat
     ff = findFilesBVQX(rootdir,'*session*.json');
     for f = 1:length(ff)
@@ -26,13 +26,20 @@ if savedatatomat
         end
     end
 end
-
+return; 
 %% plot the data / try to classify data if it has / does not have stim on.
 %% also try to find out if this is a session we should analyze / reject for various reasons.
+cntmax = 1; 
 ff = findFilesBVQX(resultsdir,'*.mat');
 anatype = {'reg','pwelch'};
+anatype = {'reg'};
+if numel(varargin) > 0
+    loopf = varargin{1}; 
+else 
+    loopf = 1:length(ff);
+end
 
-for f = 32%1:length(ff)
+for f = loopf
     [pn, ~] =fileparts(ff{f});
     load(ff{f}); 
     for i = 1:length(anatype);
@@ -55,27 +62,37 @@ for f = 32%1:length(ff)
         if reject
             figfold = figrejc;
         else
-            stimon = checkIfStimOnDataDriven(data,session,params);
+            [stimon, maxpeak, maxwidth,maxproms, meanratio] = checkIfStimOnDataDriven(data,session,params);
+            outt.serialnum(cntmax) = f; 
+            outt.stimonlog(cntmax) = stimon; 
+            outt.maxpeak(cntmax) = maxpeak;
+            outt.maxwidth(cntmax) = maxwidth;
+            outt.maxproms(cntmax) = maxproms;
+            outt.meanratio(cntmax) = meanratio;
+            cntmax = cntmax + 1; 
             if stimon == 1
                 figfold = figstimon;
             elseif stimon == 0
                 figfold = figstimoff;
             end
         end
-
-        figtitle = strrep(figtitle,'_',' ');
-        figtitle = sprintf('f-%0.3d %s',f, figtitle);
-        ffnms = fullfile(figfold, fntosave);
-        start = tic;
-        sr_str = session.xmldata.SenseChannelConfig.TDSampleRate;
-        params.sr = str2double(strrep(sr_str,'Hz',''));
-        params.plottype = anatype{i};
-        params.msec2trim = 5000;
-        stndata = preproc_trim_data(data(:,1),params.msec2trim,params.sr);
-        hfig = plot_data_freq_domain(stndata,params,figtitle);
-        evalc('save_figure(hfig,figtitle,figfold,''jpeg'')');
-        fprintf('fig %s saved in %f secs\n',figtitle,toc(start));
+        skiplotting = 0;
+        if ~skiplotting
+            figtitle = strrep(figtitle,'_',' ');
+            figtitle = sprintf('f-%0.3d %s',f, figtitle);
+            ffnms = fullfile(figfold, fntosave);
+            start = tic;
+            sr_str = session.xmldata.SenseChannelConfig.TDSampleRate;
+            params.sr = str2double(strrep(sr_str,'Hz',''));
+            params.plottype = anatype{i};
+            params.msec2trim = 5000;
+            stndata = preproc_trim_data(data(:,1),params.msec2trim,params.sr);
+            hfig = plot_data_freq_domain(stndata,params,figtitle);
+            evalc('save_figure(hfig,figtitle,figfold,''jpeg'')');
+            fprintf('fig %s saved in %f secs\n',figtitle,toc(start));
+        end
     end
     clear data session; 
 end
+save('tempouttemp.mat','outt');
 end
