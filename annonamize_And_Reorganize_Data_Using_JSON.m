@@ -16,6 +16,9 @@ addpath(genpath(pwd));
 % get subject json
 fnmsave = fullfile(rootdir, 'patients-^^^^-.json');
 Patients = loadjson(fnmsave,'SimplifyCell',1); % this is how to read the data back in.
+% %% XX 
+% Patients = Patients(2); 
+% %% XX
 
 for p = 1:length(Patients) % loop on patietns 
     %% get patient info 
@@ -26,7 +29,10 @@ for p = 1:length(Patients) % loop on patietns
     visitfnm = fullfile(rootdir, Patients(p).PatientFolderName,'visit-details-^^^^-.json');
     visits = loadjson(visitfnm,'SimplifyCell',1); % this is how to read the data back in.
     savejson('',visits,fullfile(patientdirout, 'visit-details-^^^^-.json')); % save visit jsons 
-    
+%     %% XX
+%     visits = visits(1);
+%     %% XX
+
     for v = 1:length(visits) % loop on visit 
         %% get visit info 
         visit = visits(v);
@@ -48,17 +54,14 @@ for p = 1:length(Patients) % loop on patietns
                 recordmode{s} = session.xmldata.RecordingConfig.RecordingMode; 
                 sessionTimes{s} = session.xmldata.INSTimeStamp;
             end
-            [~,idxsort] = sort(sessionTimes); % this insures that session are taken in order in whihc they were recorded  
-            foundsessions = foundsessions(idxsort); 
+            
+            time = datetime(sessionTimes,'InputFormat','MM/dd/yyyy hh:mm:ss aa');
+            [timeotu , idxsort ] = sortrows(time');
+            foundsessions = foundsessions(idxsort);
             recordmode = recordmode(idxsort); 
             sortedsessionfiles = foundsessions;
             clear foundsessions 
             %% organize session so montage files are in one group 
-            % orgnaize montages so they are in only one group
-            % XXXXXX FIX THIS ..... 
-            % loup on gropu nubmer to determin the files that go together. 
-            
-
             cnt = 1; 
             grpnum = 1; groupFiles = [];
             ss=1;
@@ -81,7 +84,7 @@ for p = 1:length(Patients) % loop on patietns
             
             %% fir this printing: 
             for ii = 1:length(sortedsessionfiles)
-                fprintf('%0.2d %d %s %s\n',ii,groupFiles(ii), sessionTimes{ii},recordmode{ii});
+                %fprintf('%0.2d %d %s %s\n',ii,groupFiles(ii), sessionTimes{ii},recordmode{ii});
             end
             unqfolders = unique(groupFiles);
             
@@ -136,6 +139,7 @@ for p = 1:length(Patients) % loop on patietns
                         
                         protocol(uqf).medication  = session.Medication;
                         protocol(uqf).StimOn  = session.StimOn;
+                        protocol(uqf).time    = datestr(session.xmldata.INSTimeStamp);
                     end
                 end
                 clear ff; 

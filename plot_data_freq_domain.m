@@ -2,7 +2,7 @@ function [hfig,hplot] = plot_data_freq_domain(data,params,figtitle)
 sr = params.sr;
 
 if isempty(figtitle)
-    hfig = figure('Position',[1000         673         908         665],'Visible','on');
+    hfig = figure('Position',[1000         673         908         665],'Visible','off');
 else
     hfig = [];
 end
@@ -24,10 +24,10 @@ switch params.plottype
         %         fftOut = (abs(fftOut(1:length(f))).^2) / datalen; % return the power of the frequencies
     case 'pwelch'
         NFFT = 512;
-        segLength = 256;
+        segLength = 1024;
         resBandwith = segLength/params.sr;
         numberFFTaverages = length(data)/segLength;
-        [fftOut,f] = pwelch(data,ones(segLength,1),0,NFFT,params.sr,'power');
+        [fftOut,f] = pwelch(data,ones(segLength,1),0,NFFT,params.sr,'psd');
         %[fftOut,f] = pwelch(data,512,256,1024,params.sr); % from nicki
         % plot only stuff below noise floor:
         f = f(f<params.noisefloor);  % frequncies
@@ -40,7 +40,7 @@ hplot  = plot(f,fftOut);
 % set titels and get handels
 htitle = title(figtitle);
 xtitle = 'Frequency (Hz)';
-ytitle = 'log_1_0 Power spectrum (dBW)';
+ytitle = 'Power  (log_1_0\muV^2/Hz)';
 hxlabel = xlabel(xtitle);
 hylabel = ylabel(ytitle);
 

@@ -9,35 +9,42 @@ evalc('mkdir(outdir)');
 %% 
 
 % plot_subject_progress(params); % plot progress from all visits 
-plot_days_since_implant_per_visit(params); % 
-plot_most_common_electrode(params); % plot most common electrode combo for each subject 
-% plot_recording_duration_per_subject(); % plot total duration of recording per subject 
-% plot_recording_duration_per_subject_per_visit(); % plot recording p
+% plot_days_since_implant_per_visit(params); % 
+% plot_most_common_electrode(params); % plot most common electrode combo for each subject 
+plot_recording_duration_per_subject(); % plot total duration of recording per subject 
 
 
 
 end
 
 function plot_subject_progress(params)
-load(params.sessionmatfile);
-allpatients = unique({sessions.patientcode}');
-% allpatients = allpatients(4:end);
-allvisits = unique({sessions(logical([sessions.usevist])).visitCategory}');
-idxuse = [        10     9     8     6     1     3     5     7     2     4];
-allvisitsuse = allvisits(idxuse);
+rootdir  = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorganized';
+resultsdir   = fullfile('..','results','mat_file_with_all_session_jsons');
+load(fullfile(resultsdir,'all_session_celldb.mat'),'outdb','sessiondb','symptomcat');
+
+% inclusion criteria:
+patients = unique(sessiondb.patientcode);
+visits = unique(sessiondb.visitCategory);
+visitsuse = visits([10    11     9     7     2     4     6     8     3     5]);
+
+
 cnt = 1; 
-for p = 1:length(allpatients)
-    psess = sessions(strcmp({sessions.patientcode},allpatients{p}));
-    for v = 1:length(allvisitsuse)
-        if sum(strcmp({psess.visitCategory},allvisitsuse{v}));
+for p = 1:length(patients)
+    for v = 1:length(visitsuse)
+        rowsselect = ...
+            sessiondb.usevisit == 1 & ...
+            strcmp(sessiondb.patientcode,patients(p)) & ...
+            strcmp(sessiondb.visitCategory,visitsuse{v}) ;
+        newdb = sessiondb(rowsselect,:);
+        if size(newdb,1) > 1 
             outmaty(cnt) = p;
             outmatx(cnt) = v; 
             cnt = cnt + 1; 
         end
     end
 end
-allvisitsuse = [{' '}; allvisitsuse;{' '}];
-allpatients = [{' '}; allpatients;{' '}];
+allvisitsuse = [{' '}; visitsuse;{' '}];
+allpatients = [{' '}; patients;{' '}];
 outmaty = outmaty + 1; 
 outmatx = outmatx + 1; 
 
@@ -146,6 +153,27 @@ for p = 1:length(patients)
 end
 set(findall(hfig,'-property','FontSize'),'FontSize',14)
 figname = 'electrodes_used_per_patient_M1';
+hfig.PaperPositionMode = 'auto' ; 
+save_figure(hfig,figname, params.outdir,'jpeg');
+
+end
+
+function plot_recording_duration_per_subject(params)
+outdir = fullfile('..','figures','json_file_reports'); 
+params.outdir = outdir; 
+rootdir  = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorganized';
+resultsdir   = fullfile('..','results','mat_file_with_all_session_jsons');
+load(fullfile(resultsdir,'all_session_celldb.mat'),'outdb','sessiondb','symptomcat');
+ntb = varfun(@sum,sessiondb,'InputVariables','recordingduraton','GroupingVariables','patientcode'); 
+rechours = ntb.sum_recordingduraton/3600;
+hfig = figure;
+bar(1:length(rechours),rechours);
+set(gca,'XTickLabel',strrep(ntb.patientcode,'_',' ')); 
+xlabel('Patients');
+ylabel('Hours'); 
+title('Sum of Recording Hours Per Subject'); 
+set(findall(hfig,'-property','FontSize'),'FontSize',14)
+figname = 'recording_hours_per_subject';
 hfig.PaperPositionMode = 'auto' ; 
 save_figure(hfig,figname, params.outdir,'jpeg');
 

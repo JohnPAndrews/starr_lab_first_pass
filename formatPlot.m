@@ -1,9 +1,9 @@
 function formatPlot(htitle,hxlabel,hylabel,hxrule,hyrule,hplot)
 % given handels to different plot elements, format the plot
 fontuse = 'Helvetica';
-fontsizeruler    = 12;
-fontsizelabel    = 14;
-fontsizetitle    = 16;
+fontsizeruler    = 16;
+fontsizelabel    = 17;
+fontsizetitle    = 18;
 
 htitle.FontSize  = fontsizetitle;
 htitle.FontName  = fontuse;
