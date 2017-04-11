@@ -28,8 +28,8 @@ chanidx = [1 3];
 params.noisefloor = 400;
 
 % hfig = figure('visible','on','position',[170        -330        2264        1056]);
-for cc = 1:2
-    for i = 1:size(newdb,1)
+for i = 1:size(newdb,1)
+    for cc = 1:2
         ticOpen = tic;
         start = tic;
         data = importdata(newdb.datafullpath{i});
@@ -37,8 +37,35 @@ for cc = 1:2
         params.sr = newdb.sr(i);
         data_tr = preproc_trim_data(data,params.msec2trim,params.sr);
         data_tr_prp = preproc_dc_offset_high_pass(data_tr,params);
+        
         if ~isempty(data_tr_prp(~isnan(data_tr_prp)))
             data_no_out = zscore(deleteoutliers(data_tr_prp,0.05));
+
+            
+            %% XX
+            [smoothdata,filtwts ]= eegfilt(data_no_out',800,13, 30);
+%             figure;
+            
+%             figure;
+            sr = params.sr;
+            t = [1:length(smoothdata)]./sr;
+%             plot(t,smoothdata); hold on; 
+            xlabels = get(gca,'XTick');
+%             set(gca,'XTickLabel',xlabels/sr);
+            [up,lo] = envelope(smoothdata,1e2,'rms');
+%             plot(t,up,t,lo,'LineWidth',1.5);
+            hold off; 
+            hfig2 = figure('Position',[777   366   560   420]);
+            plot_data_freq_domain(data_no_out,params,'placeholder'); 
+            hold on;
+            plot_data_freq_domain(smoothdata,params,'place holder'); 
+            hold on;
+            plot_data_freq_domain(up,params,'freq env beta'); 
+            hold off; 
+            % plotting envelope 
+            
+            %% XX 
+            
             topen = toc(ticOpen); ticPlot = tic;
             tplot = toc(ticPlot);
             NFFT = 512;
@@ -51,22 +78,24 @@ for cc = 1:2
             avgcontrol = mean(fftOut(idxcontrol));
             maxstim    = max(fftOut(idxfreqrange));
             ratioval = abs(maxstim /avgcontrol );
-            hfig = figure;
-            [~, hplot] = plot_data_freq_domain(data_no_out,params,'placeholder'); hold on;
+%             hfig = figure;
+%             [~, hplot] = plot_data_freq_domain(data_no_out,params,'placeholder'); hold on;
             if ratioval > 5 % bcs negative numbers - so smaller is "bigger" or more power.
                 %                 subplot(1,2,1);
                 %                 [~, hplot] = plot_data_freq_domain(data_no_out,params,'placeholder'); hold on;
-                savedir = eval([labelarea{cc} 'figStimOn']);                
-%                 hplot.Color = [0 1 0 0.1];
+                savedir = eval([labelarea{cc} 'figStimOn']);
+                chan(cc) = 1; 
+                %                 hplot.Color = [0 1 0 0.1];
             else
                 %                 subplot(1,2,2);
                 %                 [~, hplot] = plot_data_freq_domain(data_no_out,params,'placeholder'); hold on;
                 savedir = eval([labelarea{cc} 'figStimOff']);
-%                 hplot.Color = [1 0 1 0.1];
+                chan(cc) = 2; 
+                %                 hplot.Color = [1 0 1 0.1];
             end
-            ydat = hplot.YData;
-            minvals(i) = min(ydat);
-            maxvals(i) = max(ydat);
+%             ydat = hplot.YData;
+%             minvals(i) = min(ydat);
+%             maxvals(i) = max(ydat);
             
             figline1 =  strrep(...
                 sprintf('%s-p-%s-v-%s',...
@@ -89,14 +118,21 @@ for cc = 1:2
                 newdb.StimOn{i},...
                 newdb.sessionSerialNum(i));
             hfig.PaperPositionMode = 'auto' ;
+%             close(hfig);  % XXXX 
             ticSave = tic;
-            save_figure(hfig,figname,savedir,'jpeg');
+%             save_figure(hfig,figname,savedir,'jpeg');
             tsave = toc(ticSave);
             totalTime = toc(ticOpen);
-            fprintf('fig %s \t import data %.2f \t plot fig %.2f\t save fig %.2f\t total time %f\n',...
-                figname, topen/totalTime, tplot/totalTime,tsave/totalTime, totalTime);
+%             fprintf('fig %s \t import data %.2f \t plot fig %.2f\t save fig %.2f\t total time %f\n',...
+%                 figname, topen/totalTime, tplot/totalTime,tsave/totalTime, totalTime);
         end
     end
+    if chan(1) ~= chan(2)
+        x = 2;
+        fprintf('%0.3d not in agreement\n',...
+            i);
+    end
+
     %     subplot(1,2,1);
     %     title('stim on');
     %     set(gca,'YLim', [min(minvals) max(maxvals)]);

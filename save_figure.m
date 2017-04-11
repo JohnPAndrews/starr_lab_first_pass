@@ -21,8 +21,11 @@ formatype = ['-d' filetypesave];
 % hfig.PaperPosition
 % hfig.PaperPositionMode
 % hfig.PaperUnits 
-
-print(hfig,figfnm,formatype,'-r200'); 
-close(hfig); 
+if strcmp(filetypesave,'fig')
+    savefig(hfig,figfnm); 
+else
+    print(hfig,figfnm,formatype,'-r200');
+end
+% close(hfig); 
 
 end

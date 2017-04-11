@@ -1,10 +1,11 @@
+
 function [hfig,hplot] = plot_data_freq_domain(data,params,figtitle)
 sr = params.sr;
 
 if isempty(figtitle)
-    hfig = figure('Position',[1000         673         908         665],'Visible','off');
-else
     hfig = [];
+else
+    hfig = figure('Position',[1000         673         908         665],'Visible','off');
 end
 
 switch params.plottype
@@ -30,8 +31,14 @@ switch params.plottype
         [fftOut,f] = pwelch(data,ones(segLength,1),0,NFFT,params.sr,'psd');
         %[fftOut,f] = pwelch(data,512,256,1024,params.sr); % from nicki
         % plot only stuff below noise floor:
-        f = f(f<params.noisefloor);  % frequncies
-        fftOut = log10(fftOut(f<params.noisefloor));
+        
+        freqlog = f<params.noisefloor; 
+        if isfield(params,'lowcutoff')
+            freqlog = freqlog & ... 
+                f>params.lowcutoff;
+        end
+        f = f(freqlog);  % frequncies
+        fftOut = log10(fftOut(freqlog));
 end
 
 % plot:

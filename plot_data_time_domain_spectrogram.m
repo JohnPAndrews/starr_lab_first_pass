@@ -3,7 +3,12 @@ function hfig = plot_data_time_domain_spectrogram(data,params,figtitle)
 
 % inputs = data is a matrix 
 sr = params.sr; 
-hfig = figure('Position',[680   441   719   537],'Visible','on'); 
+if isempty(figtitle)
+    hfig = []; 
+else
+    hfig = figure('Position',[680   441   719   537],'Visible','on'); 
+end
+
 
 % set params for ERSP prodcution 
 specparams.tapers       = [3 5]; % precalculated tapers from dpss or in the one of the following
@@ -11,7 +16,12 @@ specparams.pad          = 1;% padding factor for the FFT) - optional
 specparams.err          = [2 0.05]; % (error calculation [1 p] - Theoretical error bars; [2 p] - Jackknife error bars
 specparams.trialave     = 0; % (average over trials/channels when 1, don't average when 0) 
 specparams.Fs           = params.sr; % sampling frequency 
-specparams.fpass        = [0 100]; %frequency band to be used in the calculation in the form [fmin fmax])- optional. 
+if isfield(params, 'freqbands') 
+    specparams.fpass        = params.freqbands; %frequency band to be used in the calculation in the form [fmin fmax])- optional. 
+else
+    specparams.fpass        = [0 100]; %frequency band to be used in the calculation in the form [fmin fmax])- optional. 
+end
+
 
 movingwin = [1 0.1];% (in the form [window winstep] i.e length of moving window and step size) Note that units here have to be consistent with units of Fs - required
 
@@ -34,12 +44,15 @@ hylabel = ylabel(ytitle);
 ax = ancestor(hplot, 'axes');
 
 % plot countering around "hot" areas 
+if isfield(params,'contouroff')
+else
 hold on; 
 [~, hcntr] = contour(ax,t,f,10*log10(S')); 
 % currently this isn't significance - just countering 
 hcntr.LineWidth = 1; 
 hcntr.Fill = 'off'; 
 hcntr.LineColor = [0 0 0];
+end
 
 hyrule = ax.YAxis;
 hxrule = ax.XAxis; 

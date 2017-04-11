@@ -2,8 +2,13 @@ function hfig = plot_data_time_domain(data,params,figtitle,xtitle,ytitle)
 %% This funciton plots data in the time domain
 
 % inputs = data is a matrix 
+if isempty(figtitle)
+    hfig = [];
+else
+    hfig = figure('Position',[1000         673         908         665],'Visible','off');
+end
+
 sr = params.sr; 
-hfig = figure('Position',[680   441   719   537],'Visible','on'); 
 hplot = plot(data); 
 
 xlabels = get(gca,'XTick');
