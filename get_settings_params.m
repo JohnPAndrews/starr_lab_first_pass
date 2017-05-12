@@ -26,6 +26,7 @@ params.plottype        = 'pwelch'; % 'reg' - regular fft , 'pwelch' use pwelch m
 settings.rootdir       = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorganized';
 % rootdir of raw data, dir under  this is patient dirs 
 settings.raw_data_fold = fullfile('..','..','Raw_Data','Ryder'); 
+settings.resdir        = fullfile('..','results');
 settings.visits        = {'10_day','3_week','1_month','2_month_visit','3_month',...
                           '6_month','1_year_visit','2_year_visit'}; 
 settings.figout        = fullfile('..','figures','ryder_first_pass');

@@ -1,6 +1,12 @@
 function visitdetail = parseXLSvisitDetail(xlsfile, sessioname)
 visitdetail = []; 
 
+if strcmp(sessioname,'brpd05_2015_05_13_12_45_32__MR_0')
+    x = 2; 
+else
+    return; 
+end
+
 [num,txt,raw] = xlsread(xlsfile);
 % this is the auto generated spreadsheet, read anothet worksheet
 if strcmp(raw{1}, 'Spreadsheet Version: 2.0') 
@@ -35,7 +41,7 @@ for c = 1:size(raw,2)
         fnm = sprintf('notes%0.3d',cnt); cnt = cnt + 1; 
         visitdetail.(fnm) = raw{sessionrow,c};
     else
-        visitdetail.(genvarname(lower(raw{headerow,c}))) = raw{sessionrow,c};
+        visitdetail.(genvarname(raw{headerow,c})) = raw{sessionrow,c};
     end
     
 end
