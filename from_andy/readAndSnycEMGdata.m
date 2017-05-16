@@ -1,0 +1,3 @@
+function readAndSnycEMGdata()
+bdffile = '
+end
