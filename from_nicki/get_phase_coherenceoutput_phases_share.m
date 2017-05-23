@@ -14,9 +14,17 @@ n_channels = size(data,1);
 n_samples = size(data,2);
 
 % Bandpass filter data
-fprintf('\tBandpass filtering from %d Hz to %d Hz\t', frequency_range(1), frequency_range(end));
+fprintf('\tBandpass filtering from %d Hz to %d Hz\t', frequency_range(1), frequency_range(2));
 %bandpass_data = X_bandpassfft(data, s_rate, frequency_range(1), frequency_range(end));
-bandpass_data = eegfilt(data,s_rate,frequency_range(1),frequency_range(end));
+
+filtorder = 0; % choose defaults
+revfilt = 0; % choose d efault
+epochframes = 0;
+firtypeuse = 'fir1';
+
+bandpass_data = eegfilt(data,s_rate,frequency_range(1),frequency_range(2),...
+        epochframes,filtorder, revfilt, firtypeuse);
+    
 clear data;
 fprintf('\n');
 
