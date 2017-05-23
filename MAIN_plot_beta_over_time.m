@@ -10,7 +10,8 @@ params.loaddat                    = 0; % load data into database or 0 just load 
 params.preprocdata                = 0; % preprocess the data
 params.plotMaxValbeta             = 0; % plot max values beta
 params.plotMaxValbetaMostFreqElec = 0; % plot max values beta only in most freq electrdoe 
-params.plotMaxValbetaMFEpsd       = 1; % plot max values beta only in most freq. electrode full psds 
+params.plotMaxValbetaMFEpsd       = 0; % plot max values beta only in most freq. electrode full psds 
+params.plotBroadBandBetaAvg       = 1; % plot max values beta only in most freq. electrode full psds 
 
 %% loop on subjects (faster to parpool for loading and saving
 % p = parpool('mac');
@@ -20,6 +21,7 @@ for p = 1:length(patexist)
     plot_patient_data_beta_from_database(params); % plot max values beta
     plot_patient_data_beta_from_database_most_freq_elect(params); % plot only the most frequ electrode
     plot_patient_data_beta_from_database_most_freq_elect_psd(params); % plot only the most frequ electrode PSD's
+    plot_patient_data_beta_from_database_avg_broadband(params); % plot broad band beta average 
 end
 % delete(p);
 end
@@ -417,6 +419,140 @@ if params.plotMaxValbetaMFEpsd
         figdir = fullfile('..','figures','beta_over_time');
         hfig.PaperOrientation = 'landscape';
         hfig.PaperSize = [16 8.5] .*2;
+        save_figure(hfig,figname,figdir, 'pdf');
+        
+    end
+end
+end
+
+function  plot_patient_data_beta_from_database_avg_broadband(params)
+if params.plotBroadBandBetaAvg
+    [settings, ~] = get_settings_params();
+    resultsdir = fullfile(settings.resdir,'mat_file_with_all_session_jsons');
+    load(fullfile(resultsdir,'all_session_celldb.mat'),'outdb','sessiondb','symptomcat');
+    fnmsave = sprintf('pP-%s_db.mat',params.patuse);
+    load(fullfile(resultsdir,fnmsave),'brdb');
+    unqvisits = {'OR_day',    'predis',  '10_day',...
+        '03_wek',    '01_mnt',    '02_mnt',...
+        '03_mnt',    '06_mnt',    '01_yer',...
+        '02_yer'}';
+    
+    
+    areasuse = {'stn', 'm1'};
+    condsuse = {'rest', 'walking','ipad'};
+    measureuse = {'_psdoutlog'};
+    
+    close all;
+    for m = 1:length(measureuse) % loop on measure use
+        hfig = figure;
+        hfig.Position = [ 52         162        2383        1160];
+        figname = sprintf('%s_%s_avg_broadband_beta_avg',params.patuse,measureuse{m});
+        cntplt = 1;
+        for a = 1:length(areasuse)
+            for c = 1:length(condsuse)     
+                % data selection 
+                logidxoverall = ...
+                    logical(strcmp(brdb.StimOn,'on') |  strcmp(brdb.StimOn,'off') ) & ...
+                    logical(strcmp(brdb.Medication,'on')| strcmp(brdb.Medication,'off')) & ...
+                    logical(strcmp(brdb.ConditionTask,condsuse{c})) ;
+                
+                %% ploy only unque electode 
+                %{
+                allelecs = brdb.([areasuse{a} '_electrodes']);
+                unqelec  = unique(allelecs); 
+                fprintf('found % d unq elecs\n',length(unqelec));
+                for ue = 1:length(unqelec)
+                    cnt(ue) = sum(strcmp(allelecs,unqelec{ue}));
+                    fprintf('%s, cnt = %d\n',unqelec{ue},cnt(ue));
+                end
+                [~,maxidx] = max(cnt);
+                fprintf('plotting %s elec with count %d\n',...
+                    unqelec{maxidx}, cnt(maxidx)); 
+                logidxunqelec = strcmp( brdb.([areasuse{a} '_electrodes']),unqelec{maxidx}); 
+                
+                clear cnt; % so still works for next subpllot 
+                
+                logidxoverall = logidxunqelec & logidxoverall;% bcs max electrodfes 
+                
+                %}
+                %% 
+                newdb  = brdb(logidxoverall,:);
+                sfnm    = sprintf('%s%s',areasuse{a},measureuse{m});
+                sfnmpsd = sprintf('%s_beta_psdoutlog_zscore',areasuse{a});
+
+
+                hsub(cntplt) = subplot(2,3,cntplt); cntplt = cntplt + 1;
+                plotttl = strrep(...
+                    sprintf('%s %s %s %s #sess = %d',...
+                    params.patuse,areasuse{a},condsuse{c}, measureuse{m},size(newdb,1)),...
+                    '_',' ');
+                for v = 1:size(newdb,1)
+                    idxx = find(strcmp(newdb.visitCategory(v), unqvisits) == 1);
+                    med  = newdb.Medication{v};
+                    stim  = newdb.StimOn{v};
+                    % XX 
+                    sfnmpsdfreq = sprintf('%s_psdoutlogfreq_zscore',areasuse{a});
+                    
+                    if iscell(newdb.(sfnm)(v))
+                        val  = cell2mat(newdb.(sfnm)(v));
+                        psduse = newdb.(sfnmpsd){v};
+                        freqidx = newdb.(sfnmpsdfreq){v} > 13 & newdb.(sfnmpsdfreq){v} < 30;
+                        val = mean(val(freqidx));
+                    else
+                        val  = double(newdb.(sfnm)(v,:));
+                        psduse = newdb.(sfnmpsd)(v,:);
+                        freqidx = newdb.(sfnmpsdfreq)(v,:) > 13 & newdb.(sfnmpsdfreq)(v,:) < 30;
+                        val = mean(val(freqidx));
+                    end
+                    switch med
+                        case 'on'
+                            clr = [27,158,119]/255;
+                        case 'off'
+                            clr = [217,95,2]/255;
+                    end
+                    switch stim
+                        case 'on'
+                            mrk = 'd';
+                        case 'off'
+                            mrk = 'o';
+                    end
+                    if ~isempty(val) & isnumeric(val)
+                        s = scatter(idxx,val,300,clr,mrk,'filled',...
+                            'MarkerFaceAlpha',0.6,...
+                            'MarkerEdgeColor',[0 0 0],...
+                            'MarkerEdgeAlpha',0.6);
+                        hold on;
+                        % only take 10 50 freq range 
+%                         psduse = psduse(freqidx);
+%                         xcenOnidx    = linspace(idxx-0.4,idxx+0.4,length(psduse));
+%                         powerOnHeigt = psduse-mean(psduse)+val; 
+%                         hplt = plot(xcenOnidx,powerOnHeigt);
+%                         hplt.Color = [clr 0.8];
+%                         hplt.LineWidth = 2;
+%                         if strcmp(mrk,'d')
+%                             hplt.LineStyle =':';
+%                         end
+                    end
+                end
+                set(gca,'XTickLabelRotation',45);
+                xlim([0 (length(unqvisits) +1)]);
+                set(gca,'XTickLabel',[' ' ; strrep(unqvisits,'_',' '); ' '])
+                htitle = title(plotttl);
+                hylabel = ylabel('Average \beta power (13-30Hz)');
+                ylimssp(cntplt-1,:) =  hsub(cntplt-1).YLim ;
+            end
+        end
+        for ss = 1:length(hsub)
+            hsub(ss).YLim = [min(ylimssp(:)) max(ylimssp(:))];
+        end
+        
+        figdir = fullfile('..','figures','beta_over_time');
+        hfig.PaperPositionMode = 'manual';
+        hfig.Units = 'normalized';
+        hfig.PaperPosition = [0.1 0.1 16*3 8.5*3];
+        hfig.PaperOrientation = 'landscape';
+        hfig.PaperSize = [16 8.5] .*3;
+        set(findall(hfig,'-property','FontSize'),'FontSize',22)
         save_figure(hfig,figname,figdir, 'pdf');
         
     end

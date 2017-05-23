@@ -8,7 +8,7 @@ evalc('mkdir(figdir)');
 % stnfigStimOff = fullfile(figdir,'stn_stimOff');mkdir(stnfigStimOff)
 % m1figStimOn = fullfile(figdir,'m1_stimOn'); mkdir(m1figStimOn)
 % m1figStimOff = fullfile(figdir,'m1_stimOff');mkdir(m1figStimOff)
-
+    
 [settings, params] = get_settings_params();
 load(fullfile(resultsdir,'all_session_celldb.mat'),'outdb','sessiondb','symptomcat');
 %% set params.

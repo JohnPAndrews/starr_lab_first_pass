@@ -25,6 +25,8 @@ if strcmp(filetypesave,'fig')
     savefig(hfig,figfnm); 
 else
     print(hfig,figfnm,formatype,'-r200');
+%     export_fig(hfig,figfnm,...
+%         '-pdf'    );
 end
 % close(hfig); 
 
