@@ -5,7 +5,7 @@ sr = params.sr;
 if isempty(figtitle)
     hfig = [];
 else
-    hfig = figure('Position',[1000         673         908         665],'Visible','off');
+    hfig = figure('Position',[1000         673         908         665],'Visible','on');
 end
 
 switch params.plottype

@@ -1,20 +1,26 @@
 function MAIN_plot_anovan()
 %% This function plots beta over time across different subjects
 % Its aim is to create summery graphs of the various subjects
-addpath(genpath(pwd));
+% addpath(genpath(pwd));
 [settings, params] = get_settings_params();
 resultsdir = fullfile(settings.resdir,'mat_file_with_all_session_jsons');
 load(fullfile(resultsdir,'all_session_celldb.mat'),'outdb','sessiondb','symptomcat');
-% addpath(genpath('/Users/roee/Starr_Lab_Folder/Data_Analysis/First_Pass_Data_Analysis/code/from_andy/eeglab14_1_0b'));
 patexist = unique(sessiondb.patientcode);
 %% set params
 params.patexist                   = patexist;
 params.loaddat                    = 0; % load data into database or 0 just load mat file
 params.preprocdata                = 0; % preprocess the data
-params.computeAnovaN              = 1; % plot pat coherence linear
+params.calcCoherence              = 1; % calc coherence 
+params.computeAnovaN              = 0; % plot pat coherence linear
 
 %% loop on subjects (faster to parpool for loading and saving
 % p = parpool('mac');
+patexist = {'brpd_04'};
+patexist = ...
+{   'brpd_05'
+    'brpd_06'
+    'brpd_07'
+    'brpd_09'};
 for p = 1:length(patexist)
     params.patuse      = patexist{p};
     loadAndPreprocessData(params)
@@ -64,7 +70,7 @@ end
 chans = [1 3];
 areas = {'stn', 'm1'};
 if params.preprocdata
-    for s = 1:size(newdb,1)
+    for s = 1:size(brdb,1)
         start = tic;
         if s == 1
             preprocdat = preproc_wrapper(brdb(s,:),params);
@@ -72,7 +78,7 @@ if params.preprocdata
             preprocdat = preproc_wrapper(brdb(s,:),params,preprocdat);
         end
         fprintf('%d out of %d data loaded in %f \n',...
-            s, size(newdb,1),toc(start));
+            s, size(brdb,1),toc(start));
     end
     dattable = struct2table(preprocdat);
     brdb   = [brdb, dattable];
@@ -80,6 +86,70 @@ if params.preprocdata
     save(fullfile(resultsdir,fnmsave),'brdb');
 else
     load(fullfile(resultsdir,fnmsave),'brdb');
+end
+
+%% calc coherence 
+areas = {'stn', 'm1'};
+freqs =    {'Delta'
+            'Theta'
+            'Alpha'
+            'LowBeta'
+            'HighBeta'
+            'Beta'
+            'LowGamma'
+            'HighGamma'};
+dat = [];
+if params.calcCoherence
+    fnmsave = sprintf('pP-%s_db.mat',params.patuse); % XXX
+    load(fullfile(resultsdir,fnmsave),'brdb');
+    for s = 1:size(brdb,1)
+        start = tic;
+        for fr = 1:length(freqs)
+            datmiss = 0; 
+            for a = 1:length(areas) 
+                fnmuse = sprintf('%s_%s_raw',areas{a},freqs{fr}); 
+                rawdat = brdb.(fnmuse){s}; 
+                if isempty(rawdat) | isnan(rawdat)
+                    datmiss = 1; 
+                    break; 
+                end
+                try  % edge case in whihh curropt file not equal number of poitns in each channel 
+                    dat(a,:) = rawdat;
+                catch 
+                    datmiss = 1;
+                end
+            end
+            if datmiss
+                fnmcret = sprintf('%s_coh_mag_lin',freqs{fr});
+                brdb.(fnmcret)(s) = NaN;
+                fnmcret = sprintf('%s_coh_phase_lin',freqs{fr});
+                brdb.(fnmcret)(s) = NaN;
+                fnmcret = sprintf('%s_phase_difference',freqs{fr});
+                brdb.(fnmcret){s} = NaN;
+                fnmcret = sprintf('%s_phase_coherence',freqs{fr});
+                brdb.(fnmcret)(s) = NaN;
+                fnmcret = sprintf('%s_phase_mean',freqs{fr});
+                brdb.(fnmcret)(s) = NaN;
+            else
+                [coh_mag_lin,coh_phase_lin,phase_coherence, phase_difference,phase_mean] = calcCoherenceMeasures(dat);
+                fnmcret = sprintf('%s_coh_mag_lin',freqs{fr});
+                brdb.(fnmcret)(s) = coh_mag_lin;
+                fnmcret = sprintf('%s_coh_phase_lin',freqs{fr});
+                brdb.(fnmcret)(s) = coh_phase_lin;
+                fnmcret = sprintf('%s_phase_difference',freqs{fr});
+                brdb.(fnmcret){s} = phase_difference;
+                fnmcret = sprintf('%s_phase_coherence',freqs{fr});
+                brdb.(fnmcret)(s) = phase_coherence;
+                fnmcret = sprintf('%s_phase_mean',freqs{fr});
+                brdb.(fnmcret)(s) = phase_mean;
+            end
+            clear dat coh_mag_lin coh_phase_lin
+        end
+        fprintf('%d out of %d data loaded in %f \n',...
+            s, size(brdb,1),toc(start));
+    end
+    fnmsave = sprintf('pP-%s_db.mat',params.patuse); % XXX
+    save(fullfile(resultsdir,fnmsave),'brdb');
 end
 
 % axis to seperate on:
@@ -149,7 +219,7 @@ if params.computeAnovaN
         loguse = strcmp(brdb.StimOn,'off');
         logarr =[]; logidx = []; 
         brdb = brdb(loguse,:);
-        dat = [brdb.stn_beta_peak_zscore, brdb.m1_beta_peak_zscore];
+        dat = [brdb.stn_Beta_avg, brdb.m1_Beta_avg];
         for i = 1:size(dat,1)
             for j = 1:size(dat,2)
                 if ~isnumeric(dat{i,j})
