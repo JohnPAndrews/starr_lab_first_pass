@@ -28,7 +28,7 @@ switch params.plottype
         segLength = 1024;
         resBandwith = segLength/params.sr;
         numberFFTaverages = length(data)/segLength;
-        [fftOut,f] = pwelch(data,ones(segLength,1),0,NFFT,params.sr,'psd');
+        [fftOut,f] = pwelch(data,params.sr,params.sr/2,1:params.noisefloor,params.sr,'psd');
         %[fftOut,f] = pwelch(data,512,256,1024,params.sr); % from nicki
         % plot only stuff below noise floor:
         
@@ -51,10 +51,10 @@ ytitle = 'Power  (log_1_0\muV^2/Hz)';
 hxlabel = xlabel(xtitle);
 hylabel = ylabel(ytitle);
 
-ax = ancestor(hplot, 'axes');
-hyrule = ax.YAxis;
-hxrule = ax.XAxis;
-
-% format plot - size and fonts
-formatPlot(htitle,hxlabel,hylabel,hxrule,hyrule,hplot);
+% ax = ancestor(hplot, 'axes');
+% hyrule = ax.YAxis;
+% hxrule = ax.XAxis;
+% 
+% % format plot - size and fonts
+% formatPlot(htitle,hxlabel,hylabel,hxrule,hyrule,hplot);
 end

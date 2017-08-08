@@ -22,7 +22,7 @@ function varargout = movement_detect(varargin)
 
 % Edit the above text to modify the response to help movement_detect
 
-% Last Modified by GUIDE v2.5 12-Jul-2017 16:23:44
+% Last Modified by GUIDE v2.5 17-Jul-2017 18:21:29
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -31,7 +31,8 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_OpeningFcn', @movement_detect_OpeningFcn, ...
                    'gui_OutputFcn',  @movement_detect_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+                   'gui_Callback',   []...
+                   );
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -51,10 +52,12 @@ function movement_detect_OpeningFcn(hObject, eventdata, handles, varargin)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to movement_detect (see VARARGIN)
-
 set(hObject,'toolbar','figure');
 set(hObject,'menubar','figure');
 
+% set(hObject, 'WindowButtonMotionFcn',@MouseMove,...
+%              'WindowButtonUpFcn',@MouseUp);
+% set(handles.figure1, 'WindowButtonMotionFcn', @MouseMove);
 % Choose default command line output for movement_detect
 eegraw = varargin{1};
 
@@ -68,16 +71,21 @@ handles.erg1 = filtfilt(b,a,double(eegraw.Erg1)) ;
 handles.erg2 = filtfilt(b,a,double(eegraw.Erg2)); 
 handles.datnames  = {'chan12','chan34','chan56','erg1','erg2'}; 
 handles.titlesuse = {'sync','ecr','deltoid','erg1','erg2'}; 
+handles.mousedown  = false; 
+handles.srate      = eegraw.srate; 
 
+handles.ipadpeaks  = [];
+
+secs = (1:length(handles.erg1) )./eegraw.srate; 
+handles.secs = secs; 
 for h = 1:5
-    evalc(sprintf('plot(handles.axes%d,handles.%s)',h,handles.datnames{h}));
+    evalc(sprintf('plot(handles.axes%d,handles.secs,handles.%s)',h,handles.datnames{h}));
     evalc(sprintf('title(handles.axes%d,''%s'');',h,handles.titlesuse{h}));
     xlimss = get(gca,'XLim'); ylimss = get(gca,'YLim'); 
     hparent = evalc(sprintf('handles.axes%d',h));
-    if h == 4 
-        hstart = imline(handles.axes4,[xlimss(1) xlimss(1)] , ylimss);
-        hend = imline(handles.axes4,[xlimss(2) xlimss(2) ], ylimss);
-    end
+    xlabel('seconds')
+    hold on; 
+
 end
 
 linkaxes([handles.axes1 handles.axes2 handles.axes3...
@@ -91,6 +99,7 @@ guidata(hObject, handles);
 % uiwait(handles.figure1);
 
 
+
 % --- Outputs from this function are returned to the command line.
 function varargout = movement_detect_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
@@ -101,9 +110,50 @@ function varargout = movement_detect_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
+function varargout = MouseDown(hObject, eventdata, handles)
+handles.mousedown = true; 
+
+fprintf('mouse down\n');
+
+function varargout = MouseMove(hObject, eventdata, handles)
+if handles.mousedown
+    % get the current point on the axes
+    cp = get ( ax, 'CurrentPoint' );
+    % update the xdata of the line handle.
+    set ( handles.axes4, 'XData', [cp(1,1) cp(1,1)] );
+end
+fprintf('mouse move\n');
+
+function varargout = MouseUp(hObject, eventdata, handles)
+handles.mousedown = false; 
+fprintf('mouse up\n');
+
+
 
 % --- Executes on button press in ipadthresh.
 function ipadthresh_Callback(hObject, eventdata, handles)
+[x,y] = ginputax(handles.axes4,1);
+hold off;
+plot(handles.axes4, handles.secs,handles.erg1); 
+hold on; 
+xlimss = get(handles.axes4,'XLim');
+ylimss = get(handles.axes4,'YLim');
+plot([xlimss(1), xlimss(2)], [y y],...
+    'LineWidth',3,...
+    'Color',[0 0.7 0 0.6]);
+
+[pks,locs,w,p] = findpeaks(handles.erg1,'MinPeakHeight',y);
+guidata(hObject, handles);
+scatter(locs./handles.srate,pks,100,[1 0 0],'filled','MarkerFaceAlpha',0.5);
+handles.ipadpeaks = locs; 
+title(handles.axes4,sprintf('found %d peaks',length(locs)));
+guidata(hObject, handles);
+
+locsec = locs./handles.srate; 
+for l = 2:length(locs)
+    
+end
+
 % hObject    handle to ipadthresh (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -128,6 +178,14 @@ function ipadthresh_CreateFcn(hObject, eventdata, handles)
 
 % --- Executes on button press in markstart.
 function markstart_Callback(hObject, eventdata, handles)
+[x,y] = ginputax(handles.axes4,1);
+xlimss = get(handles.axes4,'XLim');
+ylimss = get(handles.axes4,'YLim');
+plot([x(1) x(1)], [ylimss(1) ylimss(2)],...
+    'LineWidth',3,...
+    'Color',[0.7 0 0 0.6]);
+handles.startloc =x(1);  
+
 % hObject    handle to markstart (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -135,6 +193,13 @@ function markstart_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in markend.
 function markend_Callback(hObject, eventdata, handles)
+[x,y] = ginputax(handles.axes4,1);
+xlimss = get(handles.axes4,'XLim');
+ylimss = get(handles.axes4,'YLim');
+plot([x(1) x(1)], [ylimss(1) ylimss(2)],...
+    'LineWidth',3,...
+    'Color',[0 0 0.7 0.6]);
+handles.endloc =x(1);  
 % hObject    handle to markend (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -268,3 +333,18 @@ function axes4_ButtonDownFcn(hObject, eventdata, handles)
 % hObject    handle to axes4 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in DetectMovement.
+function DetectMovement_Callback(hObject, eventdata, handles)
+x=2; 
+% hObject    handle to DetectMovement (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes during object creation, after setting all properties.
+function DetectMovement_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to DetectMovement (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
