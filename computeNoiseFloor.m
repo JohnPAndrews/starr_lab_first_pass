@@ -1,6 +1,6 @@
 function computeNoiseFloor()
 
-rootdir = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorganized/brpd_10/noisefloor'; 
+rootdir = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorg_manual/brpd_10/v01_OR_day/noisefloor_testing'; 
 ff = findFilesBVQX(rootdir, 'br*MR_0.txt'); 
 [settings, params] = get_settings_params();
 hfig = figure; 

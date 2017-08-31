@@ -1,4 +1,4 @@
-nfunction FFT_band_fill(ha,FREQ_HI,FREQ_LO)
+function FFT_band_fill(ha,FREQ_HI,FREQ_LO)
 % FFT_band_fill fills bands of specified frequncies on axes specified by
 % the handle ha
 

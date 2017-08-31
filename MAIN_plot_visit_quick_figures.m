@@ -1,18 +1,37 @@
-function  MAIN_plot_visit_quick_figures()
-organize_brain_radio_data()
+function  MAIN_plot_visit_quick_figures(varargin)
+% add this toolbox 
+ 
+addpath(genpath(fullfile(pwd,'toolboxes' ,'jsonlab-1.5')))
 % plot_brain_radio_figures()
-% save_brain_radio_results() % no plotting
-% get_idxs_brain_radio_clean_data()
+
+organize_brain_radio_data(varargin)
+get_idxs_brain_radio_clean_data(varargin)
+save_brain_radio_results(varargin) % no plotting
 % compare_on_off_meds()
 % compare_on_off_stim()
 % compare_on_off_meds_from_results()
 end
 % 
-function organize_brain_radio_data()
-%% organize brain radio files
-rootdir = uigetdir('choose visit dir');
-if ~any(exist(fullfile(rootdir,'protocol-details-^^^^.json'),'file'))
-    addBrainRadioVisit(rootdir);
+function organize_brain_radio_data(varargin)
+if ~isempty(varargin{1})
+    rootdir = varargin{1}{1};
+    if ~any(exist(fullfile(rootdir,'protocol-details-^^^^.json'),'file'))
+        fprintf('choose visit dir with brain radio text files (must be in one dir)\n');
+        addBrainRadioVisit(rootdir);
+    else
+        fprintf('json file exist, choose visit dir \n');
+    end
+else
+    %% organize brain radio files
+    fprintf('choose visit dir for data saving \n');
+    rootdir = uigetdir('choose visit dir to save data .mat');
+    
+    if ~any(exist(fullfile(rootdir,'protocol-details-^^^^.json'),'file'))
+        fprintf('choose visit dir with brain radio text files (must be in one dir)\n');
+        addBrainRadioVisit(rootdir);
+    else
+        fprintf('json file exist, choose visit dir \n');
+    end
 end
 %% create data and figures folder
 mkdir(fullfile(rootdir,'data'));
@@ -27,13 +46,42 @@ visitjson = loadjson(jsonfn,'SimplifyCell',1); % this is how to read the data ba
 cnt = 1;
 for s = 1:length(sessiondirs)
     filesfound = findFilesBVQX(sessiondirs{s},'*.txt');
-    for f = 1:length(filesfound)
-        [pn,fn,ext] = fileparts(filesfound{f});
+    if length(filesfound) == 1 % could be raw file 
+        [pn,fn,ext] = fileparts(filesfound{1});
+        fileuse = fullfile(pn,[fn ext]);
+        clear pn fn ext 
+    elseif length(filesfound) == 2 % only choose the non raw file 
+        [pn{1},fn{1},ext] = fileparts(filesfound{1});
+        [pn{2},fn{2},ext] = fileparts(filesfound{2});
+        fnuse = fn{~cellfun(@(x) any(strfind(x,'_raw')),fn)};
+        pnuse = pn{1};
+        fileuse = fullfile(pnuse,[fnuse ext]);
+        clear pn fn ext 
+    elseif length(filesfound) >= 3 & ~strcmp(visitjson(s).task,'montage')
+        error('too many files in session')
+    end
+    
+    % only loop on files if its a montage 
+    if strcmp(visitjson(s).task,'montage')
+        ffn = filesfound; 
+        fnuse = ffn(~cellfun(@(x) any(strfind(x,'_raw')),ffn)); % get rid of raw files 
+        ffn = fnuse; 
+    else
+        ffn{1} = fileuse; 
+    end
+    
+    for ff = 1:length(ffn)
+        fileuse = ffn{ff};
+        [pn,fn,ext] = fileparts(fileuse);
+        
         if any(strfind(fn,'raw')) % if its a raw file, get xml data from non raw xml
             xmlfnm = [fn(1:end-4) '.xml'];
         else
             xmlfnm = [fn '.xml'];
         end
+        
+        
+        
         xmlstruc = xml2struct(fullfile(pn,xmlfnm));
         if isfield(xmlstruc,'RecordingItem')
             xmlstrucparsed = parseXMLstruc(xmlstruc);
@@ -41,7 +89,9 @@ for s = 1:length(sessiondirs)
             xmlstrucparsed = parseXMLstruc2(xmlstruc);
         end
         xmldata = xmlstrucparsed.RecordingItem;
-        data = importdata(filesfound{f});
+        
+        data = importdata(fileuse);
+        datout(cnt).patient   = fn(1:6);
         datout(cnt).sessionum = visitjson(s).num;
         datout(cnt).time      = visitjson(s).time;
         datout(cnt).duration  = visitjson(s).dur;
@@ -58,7 +108,9 @@ for s = 1:length(sessiondirs)
             xmlstrucparsed.RecordingItem.SenseChannelConfig.Channel1.PlusInput,...
             xmlstrucparsed.RecordingItem.SenseChannelConfig.Channel1.MinusInput);
         cnt = cnt +1;
+        clear pn fn ext  
     end
+    clear ffn 
 end
 datTab = struct2table(datout);
 fnmsave = fullfile(datdir,'dataBR.mat');
@@ -95,33 +147,49 @@ end
 
 end
 
-function save_brain_radio_results()
-datadir = uigetdir('choose data dir');
+function save_brain_radio_results(varargin)
+if ~isempty(varargin{1})
+    datadir = fullfile(varargin{1}{1},'data');
+else
+    fprintf('choose folder that contains that data .mat file \n');
+    datadir = uigetdir('choose data dir');
+end
 [pn,fn,ext] = fileparts(datadir);
 figdir  = fullfile(pn,'figures');
 resdir  = fullfile(pn,'results');
 mkdir(resdir);
 load(fullfile(datadir,'dataBR.mat'));
 % fid visit 
+if any(strfind(pn,'OR_day'));visitstr = 'OR day';end;
 if any(strfind(pn,'predis'));visitstr = '2 day';end;
 if any(strfind(pn,'10_day'));visitstr = '10 day';end;
 if any(strfind(pn,'03_wek'));visitstr = '3 week';end;
 if any(strfind(pn,'01_mnt'));visitstr = '1 month';end;
+if any(strfind(pn,'02_mnt'));visitstr = '2 month';end;
+if any(strfind(pn,'03_mnt'));visitstr = '3 month';end;
+if any(strfind(pn,'06_mnt'));visitstr = '6 month';end;
+if any(strfind(pn,'01_yer'));visitstr = '1 year';end;
+if any(strfind(pn,'02_yer'));visitstr = '2 year';end;
+
 
 strfind(pn,'predis')
 % loop on areas and plot brain radio figures
 areas = {'ecog','lfp'};
 rowskeep = [1:7 9 11];
-resTab = datTab(:,rowskeep);
+resTab = datTab(:, {'patient'    'sessionum'    'time'    'duration'    'task'    'med'    'stim'    'sr'      'ecog_elec'    'lfp_elec'});
 for s = 1:size(datTab,1)
     for a = 1:length(areas)
         tmp   = datTab.(areas{a}){s};
+        if isnan(datTab.idxclean(s,1))
+            tmpt   = tmp(datTab.sr(s)*3 : end - datTab.sr(s)*3 ); % remove first and last 3 seconds 
+        else
         tmpt   = tmp(datTab.idxclean(s,1):datTab.idxclean(s,2));
+        end
         %         tmpt  = preproc_trim_data(tmp,5000,datTab.sr(s));
         params.sr = datTab.sr(s);
         params.lowcutoff = 1;
         tmpth = preproc_dc_offset_high_pass(tmpt,params);
-        preproc.(areas{a}) = zscore(tmpth);
+        preproc.(areas{a}) = tmpth;
     end
     resTab.visit{s} = visitstr; 
     %% coherence
@@ -182,16 +250,30 @@ save(fullfile(resdir,'resultsBR.mat'),'resTab');
 
 end
 
-function get_idxs_brain_radio_clean_data()
-datadir = uigetdir('choose data dir');
+function get_idxs_brain_radio_clean_data(varargin)
+if ~isempty(varargin{1})
+    datadir = fullfile(varargin{1}{1},'data');
+else
+    fprintf('choose folder that contains that data .mat file for start end choice \n');
+    datadir = uigetdir('choose data dir');
+end
 [pn,fn,ext] = fileparts(datadir);
 load(fullfile(datadir,'dataBR.mat'));
+logclean = strcmp(datTab.task,'rest') | strcmp(datTab.task,'ipad')  | strcmp(datTab.task,'walking') ;
+totalfiles = sum(logclean);
+cntcln = 1; 
 for s = 1:size(datTab,1)
     data =  [datTab.lfp{s}'; datTab.ecog{s}'];
-    idxclean(s,:) = round(select_clean_data_chunk(data));
-    fprintf('file %d out of %d done task - %s time -%s \n',...
-        s,size(datTab,1),...
-        datTab.task{s},datTab.time{s});
+    logclean = strcmp(datTab.task{s},'rest') | strcmp(datTab.task{s},'ipad')  | strcmp(datTab.task{s},'walking') ;
+    if logclean
+        idxclean(s,:) = round(select_clean_data_chunk(data));
+        fprintf('file %d out of %d done task - %s time -%s \n',...
+            cntcln,totalfiles,...
+            datTab.task{s},datTab.time{s});
+        cntcln = cntcln + 1;
+    else
+        idxclean(s,:)  = [NaN NaN];
+    end
 end
 datTab.idxclean = idxclean;
 save(fullfile(datadir,'dataBR.mat'),'datTab');

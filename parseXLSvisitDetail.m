@@ -1,11 +1,11 @@
 function visitdetail = parseXLSvisitDetail(xlsfile, sessioname)
 visitdetail = []; 
 
-if strcmp(sessioname,'brpd05_2015_05_13_12_45_32__MR_0')
-    x = 2; 
-else
-    return; 
-end
+% if strcmp(sessioname,'brpd05_2015_05_13_12_45_32__MR_0')
+%     x = 2; 
+% else
+%     return; 
+% end
 
 [num,txt,raw] = xlsread(xlsfile);
 % this is the auto generated spreadsheet, read anothet worksheet

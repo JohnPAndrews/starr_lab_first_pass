@@ -21,12 +21,20 @@ end
 
 % --- Executes just before threshold_beep_finder is made visible.
 function threshold_beep_finder_OpeningFcn(hObject, eventdata, handles, varargin)
-handles.output = hObject;
+set(hObject,'toolbar','figure');
+set(hObject,'menubar','figure');
+
 set(handles.figure1,...
     'WindowButtonMotionFcn', @MouseMove,...
     'WindowButtonUpFcn', @MouseUp );
+% set zoooming behaviour 
+% 
+zoom xon 
+handles.ZoomOutPressedEEG = 0; 
+handles.ZoomOutPressedECOG = 0; 
 
-
+% setAxesZoomConstraint(handles.ZoomIn,handles.axEEG,'x')
+% 
 % set the initial variables eeg 
 eegraw = varargin{1};
 rawfnms = fieldnames(eegraw);
@@ -60,11 +68,12 @@ handles.ecogThresh = 20;
 handles.eegdat = eegraw; 
 handles.ecogdat =  bruse; 
 
-
+% set ouptput 
+handles.output = [];
 % Update handles structure
 guidata(hObject, handles);
 updatePlot();
-
+uiwait(handles.figure1);
 
 % UIWAIT makes threshold_beep_finder wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -78,7 +87,8 @@ function varargout = threshold_beep_finder_OutputFcn(hObject, eventdata, handles
 % handles    structure with handles and user data (see GUIDATA)
 
 % Get default command line output from handles structure
-varargout{1} = handles.output;
+varargout{1} = handles.allignData;
+delete(handles.figure1);
 
 
 % --- Executes on button press in flipEEG.
@@ -233,12 +243,14 @@ xlimsuse = handles.axECOG.XLim;
 idxuse = locs > xlimsuse(1) & locs < xlimsuse(2);
 pksuse = pks(idxuse); 
 locuse = locs(idxuse); 
+% remove ecog 
 if isfield(handles,'scatterecog')
     for s = 1:length(handles.scatterecog)
         delete(handles.scatterecog(s));
     end
     rmfield(handles,'scatterecog');
 end
+
 axes(handles.axECOG);
 for s = 1:length(pksuse)
     handles.scatterecog(s) = ...
@@ -283,6 +295,15 @@ Diffecog = ecogpoint(2)- ecogpoint(1); % XXX just use first point consider chang
 Diffeeg = eegpoint(2)- eegpoint(1);
 ecogSR  = (handles.eegdat.srate * Diffecog ) / Diffeeg;
 ecogsr = round(ecogSR);
+handles.allignData.eegsync = eegpoint; 
+handles.allignData.ecogsync = ecogpoint; 
+handles.allignData.diffecog = Diffecog;
+handles.allignData.diffeeg = Diffeeg;
+handles.allignData.ecogsr  = ecogsr;
+handles.allignData.eegsr   = handles.eegdat.srate;
+% update handles structure  
+guidata(handles.figure1,handles);
+
 handles.sr_text.String = sprintf('SR is %d',ecogsr);
 % hObject    handle to compute_sr (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -380,7 +401,8 @@ guidata(gcf,handles);
 function updatePlot()
 handles = guidata(gcf);
 %% update the plot according to current settings 
-% plot eeg 
+
+%%  plot eeg 
 cla ( handles.axEEG );
 rawfnms = handles.channel_select_eeg.String; 
 idx = handles.channel_select_eeg.Value; 
@@ -399,10 +421,15 @@ handles.hThreshEEG = line(handles.axEEG,[0 length(datplot)],...
     'UserData','eeg');
 handles.eegThreshMouseDown = 0;
 
-xlim(handles.axEEG,handles.eeg_xlims)
+% set zooming eeg 
+if handles.ZoomOutPressedEEG
+    handles.eeg_xlims = handles.axEEG.XLim;
+else
+    xlim(handles.axEEG,handles.eeg_xlims)
+end
 
 
-% plot ecog 
+%% plot ecog 
 cla ( handles.axECOG );
 
 rawfnms = handles.channel_select_ecog.String; 
@@ -421,6 +448,65 @@ handles.hThreshECOG = line(handles.axECOG,[0 length(datplot)],...
     'ButtonDownFcn',@MouseDown,...
     'UserData','ecog');
 handles.ecogThreshMouseDown = 0;
-xlim(handles.axECOG,handles.ecog_xlims)
+
+% set zooming ecog 
+if handles.ZoomOutPressedEEG
+    handles.ecog_xlims = handles.axECOG.XLim;
+else
+    xlim(handles.axECOG,handles.ecog_xlims)
+end
+
 
 guidata(gcf, handles);
+
+
+% --------------------------------------------------------------------
+function Untitled_1_Callback(hObject, eventdata, handles)
+% hObject    handle to Untitled_1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in CloseFigure.
+function CloseFigure_Callback(hObject, eventdata, handles)
+% hObject    handle to CloseFigure (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles = guidata(gcf);
+handles.output = handles.allignData; 
+uiresume(handles.figure1); 
+% delete(handles.figure1);
+
+
+% --- Executes on button press in ZoomOutEEG.
+function ZoomOutEEG_Callback(hObject, eventdata, handles)
+rawfnms = handles.channel_select_eeg.String; 
+idx = handles.channel_select_eeg.Value; 
+datplot = handles.eegdat.(rawfnms{idx}); 
+
+handles.eeg_xlims = [1 length(datplot)];
+xlim(handles.axEEG,handles.eeg_xlims)
+handles.ZoomOutPressedEEG = 1;
+guidata(gcf, handles);
+
+
+% hObject    handle to ZoomOutEEG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in zoomOutECOG.
+function zoomOutECOG_Callback(hObject, eventdata, handles)
+rawfnms = handles.channel_select_ecog.String; 
+idx = handles.channel_select_ecog.Value; 
+datplot = handles.ecogdat.(rawfnms{idx}); 
+
+handles.ecog_xlims = [1 length(datplot)];
+xlim(handles.axECOG,handles.ecog_xlims)
+handles.ZoomOutPressedECOG = 1;
+guidata(gcf, handles);
+
+
+% hObject    handle to zoomOutECOG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)

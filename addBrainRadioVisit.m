@@ -90,7 +90,13 @@ while f <= size(tablSort,1)
     end    
     grpcnt = grpcnt + 1;
 end
+%% open relevant exctel if it exists 
+xlsfile = findFilesBVQX(dirorganize,'*.xls*');
+if ~isempty(xlsfile)
+system(['open -a "Microsoft Excel" ' xlsfile{1}])
+end
 protTable = struct2table(prot); 
+%% get assign conditions 
 compTable = getVisitDetails(protTable); % user input visit conditions - med, stim, task status; 
 compTab = cell2table(compTable);
 compTab.Properties.VariableNames = {'fn','time','dur','task','med','stim'};

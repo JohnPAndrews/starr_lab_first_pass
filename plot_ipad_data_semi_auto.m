@@ -12,18 +12,27 @@ params.beepToGoCue     = 6;
 addpath(genpath(fullfile(pwd,'from_nicki')));
 eegraw = loadEEGdata(ipadir); % load eeg data
 brraw  = loadBRdata(ipadir);  % load br data
-eegtrig = selectTrigChan(eegraw);  % select the eeg stim pulse channel
-brtrig = selectTrigChan(brraw); % select the brain radio stim pulse
-alligninfo = allignData(brtrig,eegtrig); % allign the ipad data
+% this no longer needed but may be useful for general purpose in the lab.
+%eegtrig = selectTrigChan(eegraw);  % select the eeg stim pulse channel
+%brtrig = selectTrigChan(brraw); % select the brain radio stim pulse
+% alligninfo = allignData(brtrig,eegtrig); % allign the ipad data
+if exist(fullfile(ipadir,'ipad_event_indices.mat'),'file')
+    load(fullfile(ipadir,'ipad_event_indices.mat'));
+else
+    alligninfo = threshold_beep_finder(eegraw,brraw);
+end
+movepoint = emg_movement_detect(eegraw);
 fprintf('computed sr %d\n',alligninfo.ecogsr); 
-return;
-beepsfound = detectIpadBeeps(eegraw); % detect ipad beeps
-[beepsInIdxs,eventmatrices] = createEventMatrices(alligninfo,beepsfound,brraw,params);   % for now just using ipad beeps
-addpath(genpath(fullfile(pwd,'from_nicki')));
+% return;
+% beepsfound = detectIpadBeeps(eegraw); % detect ipad beeps
+[beepsInIdxs] = createEventMatrices(alligninfo,movepoint,brraw,params);   % for now just using ipad beeps
+
+% movepoint.startidx
+% movepoint.endidx
 save(fullfile(ipadir,'ipad_event_indices.mat'),...
-    'beepsInIdxs','brraw','eegraw','alligninfo','beepsfound');
+    'movepoint','brraw','eegraw','alligninfo');
 
-
+addpath(genpath(fullfile(pwd,'from_nicki')));
 plot_ipad_data_nicki(beepsInIdxs,brraw,alligninfo.ecogsr,ipadir) 
 % validateEventIdxs()
 % plotIpadData(eventMatrices);
@@ -182,33 +191,37 @@ if ~skipthis
 end
 end
 
-function [beepsInIdxs,eventmatrices] = createEventMatrices(alligninfo,beepsfound,brraw,params);
-alligninfo.ecogpulseoutS;
-alligninfo.emglocoutS ./ beepsfound.srate;
-emgSsec = alligninfo.emglocoutS(1)./beepsfound.srate;
-beepsfoundDiffStartSec = beepsfound.beepsloc - emgSsec; 
-ecogSsec = alligninfo.ecogpulseoutS(1)./alligninfo.ecogsr; % make sure to use computed not reported sr! 
-beepsSecEcog = beepsfoundDiffStartSec + ecogSsec; % beeps in second in ecog time 
-beepsPlusGoTime = beepsSecEcog + params.beepToGoCue; 
-beepsInIdxs = round(beepsPlusGoTime.* alligninfo.ecogsr);
-idxbfr  = params.timeBeforeEvent *alligninfo.ecogsr; 
-idxafr  = params.timeBeforeEvent *alligninfo.ecogsr; 
-timevec = [fliplr((1:1:idxbfr) ./alligninfo.ecogsr .*-1000),  ...
-                  (1:1:idxbfr) ./alligninfo.ecogsr];
-% generate movement indices 
-idxs = []; 
-for i = 1:length(beepsInIdxs)
-    idxusebfr = beepsInIdxs(i)-idxbfr : 1 : beepsInIdxs(i)-1;
-    idxusebfr = beepsInIdxs(i):1: beepsInIdxs(i)-1+idxafr;
-    idxaft = [idxusebfr idxusebfr];
-    idxs(i,:) = idxaft; 
-end
-% get event matrices 
-areas = {'ecog','lfp'}; 
-for a = 1:length(areas)
-%     size(brraw.ecog(idxs))
-end
-eventmatrices = []; 
+function [beepIdxBR] = createEventMatrices(alligninfo,beepsfound,brraw,params);
+beepSecsEEG = beepsfound.startidx ./ alligninfo.eegsr  - alligninfo.eegsync(1) ./ alligninfo.eegsr;
+beepSecsBR  = beepSecsEEG + alligninfo.ecogsync(1) ./ alligninfo.ecogsr;
+beepIdxBR   = round(beepSecsBR .* alligninfo.ecogsr);
+
+% alligninfo.ecogpulseoutS;
+% alligninfo.emglocoutS ./ beepsfound.srate;
+% emgSsec = alligninfo.emglocoutS(1)./beepsfound.srate;
+% beepsfoundDiffStartSec = beepsfound.beepsloc - emgSsec; 
+% ecogSsec = alligninfo.ecogpulseoutS(1)./alligninfo.ecogsr; % make sure to use computed not reported sr! 
+% beepsSecEcog = beepsfoundDiffStartSec + ecogSsec; % beeps in second in ecog time 
+% beepsPlusGoTime = beepsSecEcog + params.beepToGoCue; 
+% beepsInIdxs = round(beepsPlusG oTime.* alligninfo.ecogsr);
+% idxbfr  = params.timeBeforeEvent *alligninfo.ecogsr; 
+% idxafr  = params.timeBeforeEvent *alligninfo.ecogsr; 
+% timevec = [fliplr((1:1:idxbfr) ./alligninfo.ecogsr .*-1000),  ...
+%                   (1:1:idxbfr) ./alligninfo.ecogsr];
+% % generate movement indices 
+% idxs = []; 
+% for i = 1:length(beepsInIdxs)
+%     idxusebfr = beepsInIdxs(i)-idxbfr : 1 : beepsInIdxs(i)-1;
+%     idxusebfr = beepsInIdxs(i):1: beepsInIdxs(i)-1+idxafr;
+%     idxaft = [idxusebfr idxusebfr];
+%     idxs(i,:) = idxaft; 
+% end
+% % get event matrices 
+% areas = {'ecog','lfp'}; 
+% for a = 1:length(areas)
+% %     size(brraw.ecog(idxs))
+% end
+% eventmatrices = []; 
 end
 
 function [locstrt,pksstr, locend,pksend] = getPeaksDat(dat, sr)

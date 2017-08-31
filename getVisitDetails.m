@@ -22,8 +22,11 @@ end
 %     logical(zeros(length(protTable.Med),1)) ... 
 %     logical(zeros(length(protTable.Stim),1))];
 
-hfig = figure('Position', [100 100 752 250]);
-t = uitable('Parent', hfig, 'Position', [25 50 700 200]);
+hfig = figure();
+hfig.Position = [100 100 900 700];
+t = uitable('Parent', hfig);
+t.Position = [0 0 900 700];
+t.ColumnWidth = {250 200 60 120 60 60};
 t.Data = outdata;%protCell; 
 t.ColumnName = {'fn','date','duration','task','med','stim'}; 
 t.ColumnEditable = [false false false true true true];
