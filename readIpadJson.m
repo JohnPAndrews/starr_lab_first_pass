@@ -1,17 +1,16 @@
-function readIpadJson()
-ipadroot = '/Users/roee/Desktop/Desktop_files/ipad_raw_data';
-fnms = findFilesBVQX(ipadroot,'*.json');
-for f = 1:length(fnms)
-    [pn,fn,ext] = fileparts(fnms{f});
-    datetrial = datestr(datevec(fn(end-18:end),'yyyy-mm-dd-hh-MM-ss'));
-    ipadb.date{f,1} = datetrial;
-    ipadb.patname{f,1} = lower(fn(1:end-20));
-end
-ipadTab = struct2table(ipadb);
-ipadTabSort = sortrows(ipadTab,'date');
+function timeDat = readIpadJson(jsonfn)
+% ipadroot = '/Users/roee/Desktop/Desktop_files/ipad_raw_data';
+% % fnms = findFilesBVQX(ipadroot,'*.json');
+% % for f = 1:length(fnms)
+% %     [pn,fn,ext] = fileparts(fnms{f});
+% %     datetrial = datestr(datevec(fn(end-18:end),'yyyy-mm-dd-hh-MM-ss'));
+% %     ipadb.date{f,1} = datetrial;
+% %     ipadb.patname{f,1} = lower(fn(1:end-20));
+% % end
+% % ipadTab = struct2table(ipadb);
+% % ipadTabSort = sortrows(ipadTab,'date');
+addpath(genpath(fullfile(pwd,'toolboxes','json')));
 
-
-jsonfn = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_raw_data/robinson/3month/Br-Pd-09-dbson-medoff-exp-2016-12-13-10-38-46.json';
 [pn,fn] = fileparts(jsonfn);
 datetrial = datestr(datevec(fn(end-18:end),'yyyy-mm-dd-hh-MM-ss'));
 timeDat.date = datetrial;
@@ -24,7 +23,7 @@ for i = 1:length(jsonstruc)
     timestamp(i) = str2double(jsonstruc{1,i}{1,2});
 end
 
-searchStr = {'Sound Play: ',...             % Sound
+searchStr = {'Sound ',...             % Sound
              'Trial Start: 0',...           % start 
              'Scene: 0 - Rest',...          % Rest epoch Beg Fixation point ON red dot
              'Timer: 0',...                 % Rest epoch End Fixation point OFF red dot

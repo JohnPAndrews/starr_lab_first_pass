@@ -1,6 +1,6 @@
 function plot_data_from_br_dir_fast()
 dirf = uigetdir();
-
+addpath(genpath(fullfile(pwd,'toolboxes','xml2struct')));
 if exist(fullfile(dirf,'dataquicksave.mat'),'file')
     load(fullfile(dirf,'dataquicksave.mat'));
 else
@@ -59,7 +59,7 @@ figdir = fullfile(dirf,'figures');
 mkdir(figdir); 
 writetable(datTab(:,[1:5 7 9 10 ]),fullfile(figdir,'tabledat.csv'))
 
-return; 
+
 areas = {'ecog','lfp'};
 fprintf('\n\n'); 
 for s = 1:size(datTab,1)

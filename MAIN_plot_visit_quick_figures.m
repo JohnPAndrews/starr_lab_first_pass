@@ -2,6 +2,7 @@ function  MAIN_plot_visit_quick_figures(varargin)
 % add this toolbox 
  
 addpath(genpath(fullfile(pwd,'toolboxes' ,'jsonlab-1.5')))
+addpath(genpath(fullfile(pwd,'toolboxes' ,'xml2struct')))
 % plot_brain_radio_figures()
 
 organize_brain_radio_data(varargin)

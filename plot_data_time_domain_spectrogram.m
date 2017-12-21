@@ -1,4 +1,5 @@
 function hfig = plot_data_time_domain_spectrogram(data,params,figtitle)
+addpath(genpath(fullfile(pwd,'toolboxes','chronux_2_11')));
 %% This funciton plots data in the time domain
 
 % inputs = data is a matrix 
@@ -32,7 +33,10 @@ SS(:,:,1)=S;
 hplot = imagesc(t,f,10*log10(S'));
 axis xy; % flip axis so frequncies go from top to bottom 
 % XX need to add units to colorbar. 
+if isfield(params, 'colorbaroff')
+else
 colorbar; 
+end
 
 xtitle = 'Time (seconds)'; 
 ytitle = 'Frequency'; 
@@ -58,5 +62,9 @@ hyrule = ax.YAxis;
 hxrule = ax.XAxis; 
 
 % format plot - size and fonts 
-formatPlot(htitle,hxlabel,hylabel,hxrule,hyrule,hplot)
+
+if isfield(params, 'noformat')
+else
+    formatPlot(htitle,hxlabel,hylabel,hxrule,hyrule,hplot)
+end
 end

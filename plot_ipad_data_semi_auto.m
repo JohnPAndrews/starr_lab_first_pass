@@ -1,4 +1,5 @@
 function plot_ipad_data_semi_auto(varargin)
+
 if nargin < 1
     ipadir = uigetdir('choose ipad dir');
 else
@@ -8,20 +9,36 @@ end
 params.timeBeforeEvent = 4; % in sec
 params.timeAfterEvent  = 4; % in ses
 params.beepToGoCue     = 6;
-%%
+%% load data 
 addpath(genpath(fullfile(pwd,'from_nicki')));
+addpath(genpath(fullfile(pwd,'toolboxes','xml2struct')));
 eegraw = loadEEGdata(ipadir); % load eeg data
 brraw  = loadBRdata(ipadir);  % load br data
+
+%% allign eeg to brain radio using pulses 
 % this no longer needed but may be useful for general purpose in the lab.
 %eegtrig = selectTrigChan(eegraw);  % select the eeg stim pulse channel
-%brtrig = selectTrigChan(brraw); % select the brain radio stim pulse
+%brtrig = selectTrigChan(brraw); % select t he brain radio stim pulse
 % alligninfo = allignData(brtrig,eegtrig); % allign the ipad data
 if exist(fullfile(ipadir,'ipad_event_indices.mat'),'file')
     load(fullfile(ipadir,'ipad_event_indices.mat'));
+elseif exist(fullfile(ipadir,'ipad_allign_info.mat'),'file')
+    load(fullfile(ipadir,'ipad_allign_info.mat'));
 else
     alligninfo = threshold_beep_finder(eegraw,brraw);
+    save(fullfile(ipadir,'ipad_allign_info.mat'));
 end
-movepoint = emg_movement_detect(eegraw);
+return 
+%% detect movement from emg 
+if exist(fullfile(ipadir,'ipad_event_indices.mat'),'file')
+    load(fullfile(ipadir,'ipad_event_indices.mat'));
+elseif exist(fullfile(ipadir,'eeg_movement_detect.mat'),'file')
+    load(fullfile(ipadir,'eeg_movement_detect.mat'));
+else
+    movepoint = emg_movement_detect(eegraw);
+    save(fullfile(ipadir,'eeg_movement_detect.mat'));
+end
+
 fprintf('computed sr %d\n',alligninfo.ecogsr); 
 % return;
 % beepsfound = detectIpadBeeps(eegraw); % detect ipad beeps
@@ -33,7 +50,7 @@ save(fullfile(ipadir,'ipad_event_indices.mat'),...
     'movepoint','brraw','eegraw','alligninfo');
 
 addpath(genpath(fullfile(pwd,'from_nicki')));
-plot_ipad_data_nicki(beepsInIdxs,brraw,alligninfo.ecogsr,ipadir) 
+% plot_ipad_data_nicki(beepsInIdxs,brraw,alligninfo.ecogsr,ipadir) 
 % validateEventIdxs()
 % plotIpadData(eventMatrices);
 
@@ -138,6 +155,7 @@ alligninfo.ecogsr = ecogsr;
 end
 
 function datout  = loadBRdata(ipadir);
+addpath(genpath(fullfile(pwd,'toolboxes','xml2struct')));
 bdffnms = findFilesBVQX(ipadir,'*.bdf');
 ff = findFilesBVQX(ipadir,'BRRAW_*.mat');
 if ~isempty(ff)

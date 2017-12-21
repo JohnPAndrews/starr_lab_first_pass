@@ -3,7 +3,13 @@ function [outdat] =  loadBRdatToStruc(varargin)
 % input:
 % 1 - filename
 % 2 - if data structure given, load data and concanteante with previous structure
-filename  = varargin{1};
+
+if isempty(varargin)
+    [fn,pn] = uigetfile('*.txt');
+    filename = fullfile(pn,fn);
+else
+    filename  = varargin{1};
+end
 % load data
 try
     data = dlmread(filename);

@@ -420,8 +420,16 @@ if ~isfield(handles,'dat') % only filter for the first time
     dat.chan34 = filtfilt(b,a,double(eegraw.EXG4 - eegraw.EXG3)) ;
     dat.chan56 = filtfilt(b,a,double(eegraw.EXG6 - eegraw.EXG5)) ;
     dat.chan78 = filtfilt(b,a,double(eegraw.EXG7 - eegraw.EXG8)) ;
-    dat.erg1 = filtfilt(b,a,double(eegraw.Erg1));
-    dat.erg2 = filtfilt(b,a,double(eegraw.Erg2));
+    if isfield(eegraw,'Erg1')
+        dat.erg1 = filtfilt(b,a,double(eegraw.Erg1));
+    else
+        dat.erg1 = dat.chan78;
+    end
+    if isfield(eegraw,'Erg2')
+        dat.erg2 = filtfilt(b,a,double(eegraw.Erg2));
+    else
+        dat.erg2 = dat.chan78;
+    end 
     handles.dat = dat;
 end
 

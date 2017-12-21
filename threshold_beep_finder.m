@@ -40,7 +40,7 @@ eegraw = varargin{1};
 rawfnms = fieldnames(eegraw);
 idxchoose = cellfun(@(x) ~any(strfind(x,'srate')),rawfnms);
 rawfnms = rawfnms(idxchoose);
-handles.eeg_xlims = [0.5 20].*eegraw.srate; 
+handles.eeg_xlims = [0.5 20]; 
 % set pop up values 
 handles.channel_select_eeg.String = rawfnms;
 handles.channel_select_eeg.Value = 1;
@@ -58,20 +58,23 @@ idxchoose = cellfun(@(x) ~any(strfind(x,'srate')),rawfnms);
 rawfnms = rawfnms(idxchoose);
 handles.channel_select_ecog.String = rawfnms;
 handles.channel_select_ecog.Value = 2;
-handles.ecog_xlims = [0.5 20].*bruse.srate; 
+handles.ecog_xlims = [0.5 20]; 
 
-handles.eegThresh = 20;
-handles.ecogThresh = 20;
+handles.eegThresh = 2;
+handles.ecogThresh = 2;
 
 
 % save variables in handles strucutre 
 handles.eegdat = eegraw; 
-handles.ecogdat =  bruse; 
+handles.ecogdat =  bruse;
+handles.ecogTempSr = bruse.srate;
+handles.eegSR = eegraw.srate;
 
 % set ouptput 
 handles.output = [];
 % Update handles structure
-guidata(hObject, handles);
+guidata(gcf, handles);
+
 updatePlot();
 uiwait(handles.figure1);
 
@@ -171,24 +174,21 @@ guidata(handles.figure1, handles);
 
 % --- Executes on button press in find_beeps_eeg.
 function find_beeps_eeg_Callback(hObject, eventdata, handles)
-rawfnms = handles.channel_select_eeg.String; 
-idx = handles.channel_select_eeg.Value; 
-datplot = handles.eegdat.(rawfnms{idx}); 
-[b,a]        = butter(3,50 / (handles.eegdat.srate/2),'high'); % user 3rd order butter filter
-datplot = filtfilt(b,a,double(datplot)) ; 
-datause = zscore(datplot);
+datause = handles.datPlotEEG;
 xlimsuse = handles.axEEG.XLim;
-[pks,locs,~,~] = findpeaks(datause,...
-    'MinPeakDistance',2,...
-    'MinPeakHeight', handles.eegThresh );
-idxuse = locs > xlimsuse(1) & locs < xlimsuse(2);
-pksuse = pks(idxuse); 
-locuse = locs(idxuse); 
+
+secs = [1:length(datause)]./handles.eegSR; 
+idxuse = secs > xlimsuse(1) & secs < xlimsuse(2);
+[pksuse,locuse,~,~] = findpeaks(datause(idxuse),secs(idxuse),...
+    'MinPeakDistance',0.3,...
+    'MinPeakHeight', handles.hThreshEEG.YData(1) );
+
+
 if isfield(handles,'scattereeg')
     for s = 1:length(handles.scattereeg)
         delete(handles.scattereeg(s));
     end
-    rmfield(handles,'scattereeg');
+    handles = rmfield(handles,'scattereeg');
 end
 axes(handles.axEEG);
 hold on;
@@ -230,25 +230,23 @@ guidata(handles.figure1, handles);
 
 % --- Executes on button press in find_beeps_ecog.
 function find_beeps_ecog_Callback(hObject, eventdata, handles)
-rawfnms = handles.channel_select_ecog.String; 
-idx = handles.channel_select_ecog.Value; 
-datplot = handles.ecogdat.(rawfnms{idx}); 
-[b,a]        = butter(3,50 / (handles.ecogdat.srate/2),'high'); % user 3rd order butter filter
-datplot = filtfilt(b,a,double(datplot)) ; 
-datause = zscore(datplot);
+
+datause = handles.datPlotECOG;
 xlimsuse = handles.axECOG.XLim;
-[pks,locs,~,~] = findpeaks(datause,...
-    'MinPeakDistance',2,...
-    'MinPeakHeight', handles.ecogThresh );
-idxuse = locs > xlimsuse(1) & locs < xlimsuse(2);
-pksuse = pks(idxuse); 
-locuse = locs(idxuse); 
+secs = [1:length(datause)]./handles.ecogTempSr; 
+idxuse = secs > xlimsuse(1) & secs < xlimsuse(2);
+
+
+[pksuse,locuse,~,~] = findpeaks(datause(idxuse),secs(idxuse),...
+    'MinPeakDistance',0.3,...
+    'MinPeakHeight', handles.hThreshECOG.YData(1) );
+
 % remove ecog 
 if isfield(handles,'scatterecog')
     for s = 1:length(handles.scatterecog)
         delete(handles.scatterecog(s));
     end
-    rmfield(handles,'scatterecog');
+    handles = rmfield(handles,'scatterecog');
 end
 
 axes(handles.axECOG);
@@ -278,7 +276,7 @@ handles = guidata(gcf);
 cnt = 1; 
 for s = 1:length(handles.scattereeg)
     if handles.scattereeg(s).UserData
-        eegpoint(cnt) = handles.scattereeg(s).XData;
+        eegpoint(cnt) = handles.scattereeg(s).XData * handles.eegSR;
         cnt = cnt + 1; 
     end
 end
@@ -286,7 +284,7 @@ end
 cnt = 1; 
 for s = 1:length(handles.scatterecog)
     if handles.scatterecog(s).UserData
-        ecogpoint(cnt) = handles.scatterecog(s).XData;
+        ecogpoint(cnt) = handles.scatterecog(s).XData  * handles.ecogTempSr;
         cnt = cnt + 1; 
     end
 end
@@ -327,22 +325,7 @@ end
 function channel_select_ecog_Callback(hObject, eventdata, handles)
 updatePlot();
 
-% hObject    handle to channel_select_ecog (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns channel_select_ecog contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from channel_select_ecog
-
-
-% --- Executes during object creation, after setting all properties.
 function channel_select_ecog_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to channel_select_ecog (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -407,19 +390,39 @@ cla ( handles.axEEG );
 rawfnms = handles.channel_select_eeg.String; 
 idx = handles.channel_select_eeg.Value; 
 datplot = handles.eegdat.(rawfnms{idx}); 
-[b,a]        = butter(3,50 / (handles.eegdat.srate/2),'high'); % user 3rd order butter filter
-datplot = filtfilt(b,a,double(datplot)) ; 
-plot(handles.axEEG,zscore(datplot),...
+
+bp1 = str2num(handles.LowerBPeeg.String);
+bp2 = str2num(handles.upperBPeegData.String);
+bp = designfilt('bandpassiir',...
+    'FilterOrder',4, ...
+    'HalfPowerFrequency1',bp1,...
+    'HalfPowerFrequency2',bp2, ...
+    'SampleRate',handles.eegdat.srate);
+
+datplot = filtfilt(bp,double(datplot));
+
+handles.datPlotEEG = zscore(datplot);
+secs = [1:length(datplot)]./handles.eegSR; 
+plot(secs,handles.datPlotEEG,...
+    'Parent',handles.axEEG,...
     'LineWidth',0.5,....
     'Color',[1 0 0 0.2]);
 hold on;
-handles.hThreshEEG = line(handles.axEEG,[0 length(datplot)],...
+if isfield(handles,'hThreshEEG')
+    delete(handles.hThreshEEG)
+end
+handles.eegThresh = max(handles.datPlotEEG) * 0.7;
+handles.hThreshEEG = line([0 max(secs)],...
     [handles.eegThresh handles.eegThresh],...
+    'Parent',handles.axEEG,...
     'LineWidth',2,...
     'Color',[1 0 0 0.2],...
     'ButtonDownFcn',@MouseDown,...
     'UserData','eeg');
 handles.eegThreshMouseDown = 0;
+xlabel(handles.axEEG,'seconds');
+ylabel(handles.axEEG,'voltage');
+handles.axEEG.XLim = [min(secs) max(secs)];
 
 % set zooming eeg 
 if handles.ZoomOutPressedEEG
@@ -435,22 +438,42 @@ cla ( handles.axECOG );
 rawfnms = handles.channel_select_ecog.String; 
 idx = handles.channel_select_ecog.Value; 
 datplot = handles.ecogdat.(rawfnms{idx}); 
-[b,a]        = butter(3,50 / (handles.ecogdat.srate/2),'high'); % user 3rd order butter filter
-datplot = filtfilt(b,a,double(datplot)) ; 
-plot(handles.axECOG,zscore(datplot),...
+
+bp1 = str2num(handles.LowerBPEcogdata.String);
+bp2 = str2num(handles.upperBPecogData.String);
+bp = designfilt('bandpassiir',...
+    'FilterOrder',4, ...
+    'HalfPowerFrequency1',bp1,...
+    'HalfPowerFrequency2',bp2, ...
+    'SampleRate',handles.ecogTempSr);
+datplot = filtfilt(bp,double(datplot));
+
+handles.datPlotECOG = zscore(datplot);
+secs = [1:length(datplot)]./handles.ecogTempSr; 
+plot(handles.axECOG,secs,handles.datPlotECOG,...
     'LineWidth',0.5,....
     'Color',[0 0 1 0.2]);
 hold on;
-handles.hThreshECOG = line(handles.axECOG,[0 length(datplot)],...
+if isfield(handles,'hThreshECOG')
+    delete(handles.hThreshECOG)
+end
+handles.ecogThresh = max(handles.datPlotECOG) * 0.7;
+
+handles.hThreshECOG = line(handles.axECOG,[0 max(secs)],...
     [handles.ecogThresh handles.ecogThresh],...
     'LineWidth',2,...
     'Color',[1 0 0 0.2],...
     'ButtonDownFcn',@MouseDown,...
     'UserData','ecog');
+xlabel('seconds');
+ylabel('voltage');
 handles.ecogThreshMouseDown = 0;
+xlabel(handles.axECOG,'seconds');
+ylabel(handles.axECOG,'voltage');
+handles.axECOG.XLim = [min(secs) max(secs)];
 
 % set zooming ecog 
-if handles.ZoomOutPressedEEG
+if handles.ZoomOutPressedECOG
     handles.ecog_xlims = handles.axECOG.XLim;
 else
     xlim(handles.axECOG,handles.ecog_xlims)
@@ -462,9 +485,6 @@ guidata(gcf, handles);
 
 % --------------------------------------------------------------------
 function Untitled_1_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
 % --- Executes on button press in CloseFigure.
@@ -484,15 +504,15 @@ rawfnms = handles.channel_select_eeg.String;
 idx = handles.channel_select_eeg.Value; 
 datplot = handles.eegdat.(rawfnms{idx}); 
 
-handles.eeg_xlims = [1 length(datplot)];
+secs = [1:length(datplot)]./handles.eegSR; 
+handles.eeg_xlims = [min(secs) max(secs)];
+
 xlim(handles.axEEG,handles.eeg_xlims)
 handles.ZoomOutPressedEEG = 1;
+updatePlot();
 guidata(gcf, handles);
 
 
-% hObject    handle to ZoomOutEEG (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
 % --- Executes on button press in zoomOutECOG.
@@ -501,12 +521,95 @@ rawfnms = handles.channel_select_ecog.String;
 idx = handles.channel_select_ecog.Value; 
 datplot = handles.ecogdat.(rawfnms{idx}); 
 
-handles.ecog_xlims = [1 length(datplot)];
+secs = [1:length(datplot)]./handles.ecogTempSr; 
+handles.ecog_xlims = [min(secs) max(secs)];
+
 xlim(handles.axECOG,handles.ecog_xlims)
 handles.ZoomOutPressedECOG = 1;
 guidata(gcf, handles);
 
 
-% hObject    handle to zoomOutECOG (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in ZoomYEEG.
+function ZoomYEEG_Callback(hObject, eventdata, handles)
+handles = guidata(gcf);
+rawfnms = handles.channel_select_eeg.String; 
+idx = handles.channel_select_eeg.Value; 
+datplot = handles.datPlotEEG;
+secs = [1:length(datplot)]./handles.eegSR; 
+idxx = secs > handles.axEEG.XLim(1) & secs < handles.axEEG.XLim(2);
+miny = min(datplot(idxx)) - min(datplot(idxx)) *0.1;
+maxy = max(datplot(idxx)) + max(datplot(idxx)) *0.1;
+handles.axEEG.YLim = [miny maxy];
+handles.eegThresh = maxy/2; 
+guidata(gcf, handles);
+
+
+
+
+
+
+% --- Executes on button press in ZoomYecog.
+function ZoomYecog_Callback(hObject, eventdata, handles)
+handles = guidata(gcf);
+rawfnms = handles.channel_select_ecog.String; 
+idx = handles.channel_select_ecog.Value; 
+datplot = handles.datPlotECOG;
+secs = [1:length(datplot)]./handles.ecogTempSr; 
+idxx = secs > handles.axECOG.XLim(1) & secs < handles.axECOG.XLim(2);
+
+
+miny = min(datplot(idxx)) - min(datplot(idxx)) *0.1;
+maxy = max(datplot(idxx)) + max(datplot(idxx)) *0.1;
+handles.axECOG.YLim = [miny maxy];
+handles.ecogThresh = maxy/2; 
+
+guidata(gcf, handles);
+
+% --- Executes on button press in BandPassEEG.
+function BandPassEEG_Callback(hObject, eventdata, handles)
+
+% --- Executes on button press in BandPassECOGdata.
+function BandPassECOGdata_Callback(hObject, eventdata, handles)
+
+
+function LowerBPeeg_Callback(hObject, eventdata, handles)
+
+
+function LowerBPeeg_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function upperBPeegData_Callback(hObject, eventdata, handles)
+
+
+% --- Executes during object creation, after setting all properties.
+function upperBPeegData_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function LowerBPEcogdata_Callback(hObject, eventdata, handles)
+
+
+% --- Executes during object creation, after setting all properties.
+function LowerBPEcogdata_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function upperBPecogData_Callback(hObject, eventdata, handles)
+
+function upperBPecogData_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function updateThePlot_Callback(hObject, eventdata, handles)
+updatePlot();
