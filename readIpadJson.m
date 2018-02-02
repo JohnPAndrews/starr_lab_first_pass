@@ -16,11 +16,11 @@ datetrial = datestr(datevec(fn(end-18:end),'yyyy-mm-dd-hh-MM-ss'));
 timeDat.date = datetrial;
 timeDat.patname = fn(1:end-20);
 
-jsonstruc = loadjson(jsonfn);
+jsonstruc = loadjson(jsonfn,'SimplifyCell',0);
 jsonstruc = jsonstruc';
-for i = 1:length(jsonstruc)
-    description{i} = jsonstruc{1,i}{1,1};
-    timestamp(i) = str2double(jsonstruc{1,i}{1,2});
+for i = 1:size(jsonstruc,1)
+    description{i} = jsonstruc{i,1}{1,1};
+    timestamp(i) = str2double(jsonstruc{i,1}{1,2});
 end
 
 searchStr = {'Sound ',...             % Sound

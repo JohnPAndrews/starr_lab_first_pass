@@ -7,52 +7,55 @@ cnt = 1;
 nrow = 8;
 ncol = 3;
 gap = 0.01*2;
-margw = 0.01*2; 
+margw = 0.01*2;
 margh = 0.05;
-
-%% add build database 
-% build data base 
-datAll = [] ;
-for p = [ 2]%:length(patdir)
-    ff = findFilesBVQX(patdir{p},'dataBR.mat');
-    for f = 1:length(ff) % loop on visits 
-        load(ff{f}); 
-        [visitstr,rowuse] = getVisitNameFromDir(ff{f});
-        datUse = datTab(:,{'patient','sessionum','time','duration','task','med','stim','sr','ecog_elec','lfp_elec'}); 
-        for s = 1:size(datTab)
-            datUse.visit{s} = visitstr;
-            dat = datTab.lfp{s};
-            datdc = dat-mean(dat);
-            [fftOut,f]   = pwelch(datdc,256,256/2,1:100,794,'psd');
-            datUse.lfpPower{s} = log10(fftOut);
-            datUse.lfpPowerf{s} = f;
-            
-            dat = datTab.ecog{s};
-            datdc = dat-mean(dat);
-            [fftOut,f]   = pwelch(datdc,256,256/2,1:100,794,'psd');
-            
-            datUse.ecogPower{s} = log10(fftOut);
-            datUse.ecogPowerf{s} =f;
-            % find ipad session and concatenate;
-            if strcmp(datUse.task{s},'ipad') % if ipad taks 
+buildb = 0;
+%% add build database
+% build data base
+if buildb
+    datAll = [] ;
+    for p = 2%:length(patdir)
+        ff = findFilesBVQX(patdir{p},'dataBR.mat');
+        for f = 1:length(ff) % loop on visits
+            load(ff{f});
+            [visitstr,rowuse] = getVisitNameFromDir(ff{f});
+            datUse = datTab(:,{'patient','sessionum','time','duration','task','med','stim','sr','ecog_elec','lfp_elec'});
+            for s = 1:size(datTab)
+                datUse.visit{s} = visitstr;
+                dat = datTab.lfp{s};
+                datdc = dat-mean(dat);
+                [fftOut,f]   = pwelch(datdc,256,256/2,1:100,794,'psd');
+                datUse.lfpPower{s} = log10(fftOut);
+                datUse.lfpPowerf{s} = f;
+                
+                dat = datTab.ecog{s};
+                datdc = dat-mean(dat);
+                [fftOut,f]   = pwelch(datdc,256,256/2,1:100,794,'psd');
+                
+                datUse.ecogPower{s} = log10(fftOut);
+                datUse.ecogPowerf{s} =f;
+                % find ipad session and concatenate;
+                if strcmp(datUse.task{s},'ipad') % if ipad taks
+                end
             end
+            datAll = [datAll ; datUse];
         end
-        datAll = [datAll ; datUse];
+        ff = findFilesBVQX(patdir{p},'results_freq_domain_ipad_json.mat');
     end
-    ff = findFilesBVQX(patdir{p},'results_freq_domain_ipad_json.mat');
 end
-%% 
+%%
 areasuse = {'ecog'};
-for a = 1:length(areasuse)
-    for p = [ 2]%:length(patdir)
+cntSess = 1; 
+for a = 1%:length(areasuse)
+    for p = [ 5 6 7]%:length(patdir)
         [pn,patstr] = fileparts(patdir{p});
         visitdir = findFilesBVQX(patdir{p},'v*',struct('dirs',1,'depth',1));
         hfig = figure;
         [ha, pos] = tight_subplot(nrow, ncol, gap, margw, margh);
-        for v = 3:length(visitdir) % start from 10 day 
+        for v = 3:length(visitdir) % start from 10 day
             datafn = findFilesBVQX(visitdir{v},'dataBR.mat');
             [visitstr,rowuse] = getVisitNameFromDir(visitdir{v});
-            rowuse = rowuse -2; % to start plots from first row 
+            rowuse = rowuse -2; % to start plots from first row
             if ~isempty(datafn)
                 load(datafn{1});
             end
@@ -74,11 +77,10 @@ for a = 1:length(areasuse)
                     if logical(drow.stim); stims ='on'; else; stims ='off';end;
                     if logical(drow.med); meds ='on'; else; meds ='off';end;
                     elec = drow.([areasuse{a} '_elec']);
-                    [hpp, conds] = plotOtherRecs(datTab,i,drow.med,drow.stim,areasuse{a},elec,ha(idxx));
+                    [hpp, conds,tempres] = plotOtherRecs(datTab,i,drow.med,drow.stim,areasuse{a},elec,ha(idxx));
                     ttluse = sprintf('%d %s %s S-%s M-%s %s',cnt,drow.patient{1},visitstr,stims, meds,elec{1});
                     title(strrep( ttluse,'_' ,' '),...
                         'FontWeight', 'bold','FontSize',8);
-
                     % for plotting
                     if ~isempty(matfile)
                         hold on;
@@ -95,23 +97,42 @@ for a = 1:length(areasuse)
                             leglines(ll) = hsb.mainLine;
                             hold on;
                             clear fftOut;
+                            resIpad{ll} = mean(fftuse);
                         end
                         xlim([5 85]);
                         hleg = legend([leglines hpp],{'hold', 'prep','move', 'rest' ,'walking'});
-                        hleg.FontSize = 5; 
+                        hleg.FontSize = 5;
                         hleg.Box = 'off';
                         hleg.Color = 'none';
                         hleg.Location = 'best';
-                       
+                        % save results
+                        resTab(cntSess).patient = drow.patient{1};
+                        resTab(cntSess).visit = visitstr;
+                        resTab(cntSess).time = drow.time{1};
+                        resTab(cntSess).med = meds;
+                        resTab(cntSess).stim = stims;
+                        resTab(cntSess).sr = drow.sr(1);
+                        resTab(cntSess).ecog_elec = drow.ecog_elec{1};
+                        resTab(cntSess).lfp_elec = drow.lfp_elec{1};
+                        resTab(cntSess).freqs = f;
+                        resTab(cntSess).rest = tempres.rest;
+                        resTab(cntSess).walking = tempres.walking; 
+                        resTab(cntSess).hold = resIpad{1};
+                        resTab(cntSess).prep = resIpad{2};
+                        resTab(cntSess).move = resIpad{3};
+                        cntSess = cntSess + 1; 
                     end
+                    
+
+                    
                     axis tight;
-                    if rowuse == 8 
+                    if rowuse == 8
                         xlabel('Frequency (Hz)','FontSize',8);
                     else
                         xlabel('');
                         xticklabels('');
                     end
-                    if i ==1 
+                    if i ==1
                         ylabel('Power  (log_1_0\muV^2/Hz)','FontSize',8);
                     else
                         yticklabels('');
@@ -125,9 +146,11 @@ for a = 1:length(areasuse)
         fnmsv = sprintf('%s_%s_freq.jpeg',patstr,areasuse{a});
         print(hfig,fullfile(figdiruse,fnmsv),'-djpeg','-r300');
         close(hfig);
+        resdir = fullfile('..','results','ipad_from_json_results');
+        results = struct2table(resTab);
+        save(fullfile(resdir,sprintf('%s.mat',patstr)),'results');
     end
 end
-
 
 end
 
@@ -159,26 +182,28 @@ end
 plotidx = x(rowuse,coluse);
 end
 
-function [hp, conds] = plotOtherRecs(datTab,coluse,medss,stimss,areastr,elecstr,hax)
+function [hp, conds, res] = plotOtherRecs(datTab,coluse,medss,stimss,areastr,elecstr,hax)
+res = [];
 conds = {'rest','walking'};
 colors = [0 0 0 0.8 ; 0.5 0.5 0.7 0.8];
 for c = 1:length(conds)
-    idxuse = datTab.med == medss & datTab.stim == stimss & ... 
+    idxuse = datTab.med == medss & datTab.stim == stimss & ...
         cellfun(@(x) strcmp(x,conds{c}),datTab.task) & ...
         cellfun(@(x) strcmp(x,elecstr),datTab.([areastr '_elec']));
-    idxs = find(idxuse==1); 
-    if sum(idxuse) > 1 
+    idxs = find(idxuse==1);
+    if sum(idxuse) > 1
         idxchoose = idxs(2);
-    elseif sum(idxuse) == 1 
+    elseif sum(idxuse) == 1
         idxchoose = idxs(1);
     end
     datraw = datTab.(areastr){idxchoose};
     idxdat   = datTab.idxclean(idxchoose,:);
     datcnop = datraw(idxdat(1):idxdat(2));
     datdc = datcnop - mean(datcnop);
-    [fftOut,f]   = pwelch(datdc,256,256/2,1:100,794,'psd');
+    [fftOut,f]   = pwelch(datdc,256,256/2,1:120,794,'psd');
+    res.(conds{c}) = log10(fftOut);
     hp(c) = plot(hax,f,log10(fftOut));
-    hp(c).LineWidth = 1; 
+    hp(c).LineWidth = 1;
     hp(c).Color = colors(c,:);
 end
 end

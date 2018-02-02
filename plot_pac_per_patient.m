@@ -1,7 +1,7 @@
 function plot_pac_per_patient()
 %% pac params
 params.PhaseFreqVector      = 2:4:50;
-params.AmpFreqVector        = 2:4:90;
+params.AmpFreqVector        = 2:4:100;
 params.PhaseFreq_BandWidth  = 4;
 params.AmpFreq_BandWidth    = 10;
 params.useparfor            = 0;
@@ -18,8 +18,8 @@ matcstr    =  { 'OR_day','predis','10_day',...
     '03_mnt','06_mnt',...
     '01_yer','02_yer'};
 
-patdir = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorg_manual/brpd_03';
-figdir = '/Users/roee/Starr_Lab_Folder/Data_Analysis/First_Pass_Data_Analysis/figures/PAC_activa/brpd03';
+patdir = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorg_manual/brdy_11';
+figdir = '/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorg_manual/brdy_11/v02_predis/figures';
 visitdir = findFilesBVQX(patdir,'v0*',struct('dirs',1,'depth',1));
 for v = 1:length(visitdir)
     ff = findFilesBVQX(visitdir{v},'dataBR.mat');

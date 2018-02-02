@@ -1,5 +1,5 @@
 function plot_ipad_from_json(varargin) 
-plottt0data  = 0;
+plottt0data  = 1;
 if nargin < 1
     ipadir = uigetdir('choose ipad dir');
 elseif nargin == 1
@@ -67,6 +67,7 @@ if plottt0data
     timeparams.extralines                  = 1; % plot extra line
     timeparams.extralinesec                = 3000; % extra line location in seconds
     timeparams.analysis                    = 'hold_center';
+    timeparams.filtertype                  = 'ifft-gaussian' ; % 'ifft-gaussian' or 'fir1' 
     idxuse = cellfun(@(x) strcmp(x,'prep_ON'),eventsTable.label);
     beepsInIdxs = eventsTable.bridx(idxuse);
     beepsInIdxs = beepsInIdxs(~isnan(beepsInIdxs));

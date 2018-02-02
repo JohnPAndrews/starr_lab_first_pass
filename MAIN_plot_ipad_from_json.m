@@ -11,7 +11,7 @@ end
 cnt = 1;
 plotdata = 1;
 findbeeps = 0;
-for p = 4%1:length(patdir)
+for p = [6 7 8]%1:length(patdir)
     [pn,patstr] = fileparts(patdir{p});
     visitdir = findFilesBVQX(patdir{p},'v*',struct('dirs',1,'depth',1));
     for v = 1:length(visitdir)

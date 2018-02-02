@@ -40,6 +40,7 @@ classdef BioSemiSerialPort
             portnames.mac = '/dev/cu.usbserial-DN17M98C';
             portnames.pc = 'COM3';
             portnames.linux = '/dev/cu.usbserial-DN17M98C';
+            % https://www.mathworks.com/matlabcentral/answers/95024-why-is-my-serial-port-not-recognized-with-matlab-on-linux-or-solaris
         end
     end
     methods

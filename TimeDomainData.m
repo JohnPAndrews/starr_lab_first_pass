@@ -23,7 +23,7 @@ classdef TimeDomainData
          elseif nargin == 2 
             if isnumeric(dat) && isnumeric(Fs)
                obj.Data = dat;
-               obl.Fs   = Fs; 
+               obj.Fs   = Fs; 
             else
                error('Value must be numeric')
             end 

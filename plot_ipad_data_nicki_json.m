@@ -70,17 +70,38 @@ for ch_index = 1:num_channels
     end
     
     for frequency_index=1:number_of_frequencies %loops through one freq at a time
-        disp(number_of_frequencies-frequency_index+1)
+        disp(number_of_frequencies-frequency_index+1);
         %         filtered_signal = eegfilt_fir1(signal,sampling_rate,center_frequencies(frequency_index) - 1,center_frequencies(frequency_index) + 1);
         filtorder = 0; % choose defaults
         revfilt = 0; % choose d efault
         epochframes = 0;
-        firtypeuse = 'fir1';
-        filtered_signal      = ...
-            eegfilt(signal,sampling_rate,center_frequencies(frequency_index) - 1,center_frequencies(frequency_index) + 1,...
-            epochframes,filtorder, revfilt, firtypeuse);
         
-        analytic_signal = hilbert(filtered_signal);
+        switch timeparams.filtertype
+            case 'fir1'
+                %% option 1
+                firtypeuse = 'fir1';
+                filtered_signal      = ...
+                    eegfilt(signal,sampling_rate,center_frequencies(frequency_index) - 1,center_frequencies(frequency_index) + 1,...
+                    epochframes,filtorder, revfilt, firtypeuse);
+                
+                analytic_signal = hilbert(filtered_signal);
+            case 'ifft-gaussian'
+                %% option 2
+                fractional_bandwidth = .35;
+                analytic_signal =...
+                    gaussian_filter_signal(...
+                    'output_type',...
+                    'analytic_signal',...
+                    'raw_signal',...
+                    signal,...
+                    'sampling_rate',...
+                    ecogsr,...
+                    'center_frequency',...
+                    center_frequencies(frequency_index),...
+                    'fractional_bandwidth',...
+                    fractional_bandwidth);
+        end
+
         % make z-scored event-related time-frequency (zertf)
         for condition=1:number_of_conditions
             
@@ -172,12 +193,12 @@ end
 ttlfig = sprintf('iPad %s meds %s stim',meds,stims);
 set(findall(hfig,'-property','FontSize'),'FontSize',12)
 % suptitle(ttlfig);
-fnmsv = sprintf('ipad_spectrogram_%s_%s-meds-%stim.fig',meds,stims,timeparams.analysis);
+fnmsv = sprintf('ipad_spectrogram_%s-meds-%s-stim_%s_%s.fig',meds,stims,timeparams.analysis,timeparams.filtertype);
 saveas(hfig,fullfile(figdir,fnmsv));
 hfig.PaperPositionMode = 'manual';
 hfig.PaperSize = [14 8];
 hfig.PaperPosition = [0 0 14 8];
-fnmsv = sprintf('ipad_spectrogram_%s_%s-meds-%stim.jpeg',meds,stims,timeparams.analysis);
+fnmsv = sprintf('ipad_spectrogram_%s-meds-%s-stim_%s_%s.jpeg',meds,stims,timeparams.analysis,timeparams.filtertype);
 print(hfig,fullfile(figdir,fnmsv),'-djpeg','-r600');
 % print(hfig,fullfile(figdir,fnmsv),'-dpdf');
 

@@ -6,15 +6,15 @@ chanl = 2; % motor cortex
 cnt = 1; 
 nrow = 8;
 ncol = 3;
-gap = 0.01*2;
-marg_h = 0.05;
-marg_w = 0.05;
+gap = 0.01*3;
+marg_h = 0.1;
+marg_w = 0.1;
 
-for p = [4]%2:length(patdir)
+% save data 
+for p = [5:8]%2:length(patdir)
+    rcnt = 1; 
     [pn,patstr] = fileparts(patdir{p});
     visitdir = findFilesBVQX(patdir{p},'v*',struct('dirs',1,'depth',1));
-    hfig = figure; 
-    [ha, pos] = tight_subplot(nrow, ncol, gap, marg_w, marg_h);
     for v = 1:length(visitdir)
         datafn = findFilesBVQX(visitdir{v},'dataBR.mat');
         [visitstr,rowuse] = getVisitNameFromDir(visitdir{v});
@@ -33,65 +33,107 @@ for p = [4]%2:length(patdir)
                 brrfile = findFilesBVQX(ipaddir{i},'brpd*.txt');
                 finalfile = findFilesBVQX(ipaddir{i},'*hold_centertim.jpeg*.jpeg');
                 
-                
                 % for plotting
                 if ~isempty(matfile)
-                    idxxx = getRowCol(8,3,rowuse,i);
-%                     hsub = subplot(8,3,idxxx);
-                    axes(ha(idxxx));
-%                     hsub.Position - pos{idxxx};
-                    
-                    hold on;
-                    
                     load(matfile{1});
-                    tempmat=double(squeeze(zertf(:,:,1,chanl)));
-                    pcolor(epoch_time,center_frequencies,tempmat);
-                    shading interp;
-                    axis tight 
-                    cmax=3;
-                    cmin=-cmax;
-                    caxis([cmin cmax]);
-                    hold on;
-                    
-                    plot([0 0 ],ha(idxxx).YLim ,...
-                        'LineWidth',2,...
-                        'Color',[0.1 0.1 0.1 0.7]);        
-                    plot([timeparams.extralinesec timeparams.extralinesec],ha(idxxx).YLim ,...
-                        'LineWidth',2,...
-                        'Color',[0.2 0.2 0.2 0.7]);
                     drow = datTab(datTab.sessionum == str2num(ipadsess(3:5)),:);
                     if logical(drow.stim); stims ='on'; else; stims ='off';end;
                     if logical(drow.med); meds ='on'; else; meds ='off';end;
-                    ttluse = sprintf('%d %s %s S-%s M-%s',cnt,drow.patient{1},visitstr,stims, meds);
-                    title(strrep( ttluse,'_' ,' '),...
-                        'FontWeight', 'bold','FontSize',10);
-                    %xlabel('time (msec)');
-                    %ylabel('power');
-                    if rowuse == 8
-                        xlabel('Time (msec)','FontSize',8);
-                    else
-                        xlabel('');
-                        xticklabels('');
-                    end
-                    if i ==1
-%                         ylabel('Power  (log_1_0\muV^2/Hz)','FontSize',8);
-                    else
-                        yticklabels('');
-                    end
 
-                    set(gca,'XTickLabel','');
-                    set(gca,'YTickLabel','');
+                    % save results 
+                    rslt(rcnt).patient   = drow.patient{1};
+                    rslt(rcnt).visit     = visitstr; 
+                    rslt(rcnt).med       = meds; 
+                    rslt(rcnt).stim      = stims; 
+                    rslt(rcnt).sessnum   = str2num(ipadsess(3:5));
+                    rslt(rcnt).sr        = drow.sr(1);
+                    rslt(rcnt).task      = drow.task{1};
+                    rslt(rcnt).ecog_elec = drow.ecog_elec{1};
+                    rslt(rcnt).lfp_elec  = drow.lfp_elec{1};
+                    rslt(rcnt).epoch_time  = epoch_time;
+                    rslt(rcnt).center_frequencies  = center_frequencies;
+                    rslt(rcnt).zertf  = zertf;
+                    rslt(rcnt).ertf  = zertf;
+                    rslt(rcnt).start_epoch_at_this_time  = timeparams.start_epoch_at_this_time;
+                    rslt(rcnt).stop_epoch_at_this_time  = timeparams.stop_epoch_at_this_time;
+                    rslt(rcnt).start_baseline_at_this_time  = timeparams.start_baseline_at_this_time;
+                    rslt(rcnt).stop_baseline_at_this_time  = timeparams.stop_baseline_at_this_time;
+                    rslt(rcnt).extralines  = timeparams.extralines;
+                    rslt(rcnt).extralinesec  = timeparams.extralinesec;
+                    rslt(rcnt).analysis  = timeparams.analysis;
+                    rslt(rcnt).filtertype  = timeparams.filtertype;
+                    
+                    rcnt = rcnt + 1; 
                 end
             end
         end
     end
-    hfig.PaperPositionMode = 'manual';
-    hfig.PaperSize = [7 12];
-    hfig.PaperPosition = [0 0 7 12];
-    fnmsv = sprintf('%s.jpeg',patstr);
-    print(hfig,fullfile(figdiruse,fnmsv),'-djpeg','-r300');
-    close(hfig);
+    resdir = fullfile('..','results','ipad_from_json_results');
+    results = struct2table(rslt);
+    save(fullfile(resdir,sprintf('%s_spectrogram.mat',patstr)),'results');
+
 end
+%% 
+% make different color map for z positive and z negative 
+%% 
+%% plotting 
+visits = {'10 day','3 week','1 month','2 month','3 month','6 month','1 year','2 year'};
+pats = [3 5];
+for p = 1:length(pats)
+    areas = {'lfp','ecog'};
+    for a = 1:length(areas)
+        hfig = figure;
+        [ha, pos] = tight_subplot(nrow, ncol, gap, marg_w, marg_h);
+        cmin = -4;
+        cmax =  4;
+        resdir = fullfile('..','results','ipad_from_json_results');
+        load(fullfile(resdir,sprintf('brpd_%0.2d_spectrogram.mat',pats(p))),'results');
+        for v = 1:length(visits)
+            idx = cellfun(@(x) strcmp(x,visits{v}),results.visit);
+            idxuse = find(idx == 1);
+            for s = 1:length(idxuse)
+                idxxx = getRowCol(nrow,ncol,v,s);
+                hsub = ha(idxxx);
+                axes(ha(idxxx)); hold on;
+                tmp = results.zertf{idxuse(s)};
+                data = squeeze(tmp(:,:,1,a)); % 3rd dim is condition always = 1
+                freqs = results.center_frequencies{idxuse(s)};
+                if iscell(results.epoch_time) % sometimes ecah subject has diffeent times (slightly - which makes cell array)
+                    epoch_time = results.epoch_time{idxuse(s)};
+                else
+                    epoch_time = results.epoch_time(idxuse(s),:);
+                end
+                %             idxzero = data < 1 & data > -1;
+                %                 data(idxzero) = 0;
+                himg = imagesc(epoch_time,freqs,data);
+                caxis([cmin cmax]);
+                title(sprintf('%s %s med %s stim %s (%s)',...
+                    results.patient{idxuse(s)},...
+                    results.visit{idxuse(s)},...
+                    results.med{idxuse(s)},...
+                    results.stim{idxuse(s)},...
+                    results{a}),...
+                    'FontWeight', 'bold','FontSize',10);
+                axis('xy');
+                shading interp
+                xlim([min(epoch_time) max(epoch_time)]);
+                ylim([min(freqs) max(freqs)]);
+                plot([0 0], get(gca,'YLim'),'LineWidth',2,'Color',[0.1 0.1 0.1 0.8]);
+                plot([3e3 3e3], get(gca,'YLim'),'LineWidth',2,'Color',[0.1 0.1 0.1 0.8]);
+            end
+        end
+        hfig.PaperPositionMode = 'manual';
+        hfig.PaperSize = [8 13];
+        hfig.PaperPosition = [0 0 8 13];
+        fnmsv = sprintf('%s_%s.jpeg',areas{a},results.patient{1});
+        print(hfig,fullfile(figdiruse,fnmsv),'-djpeg','-r300');
+        close(hfig);
+    end
+end
+
+
+
+
 end
 
 
@@ -106,8 +148,13 @@ matcstr    =  { 'OR_day','predis','10_day',...
     '03_mnt','06_mnt',...
     '01_yer','02_yer'};
 idxvisit = cellfun(@(x) any(strfind(viditdrn,x)),matcstr);
-visitstr = possstrings{idxvisit};
-rowuse = find(idxvisit==1) -2;
+if sum(idxvisit)==0 % no match 
+    [~,visitstr] = fileparts(viditdrn);
+    rowuse = 0;
+else
+    visitstr = possstrings{idxvisit};
+    rowuse = find(idxvisit==1) -2;
+end
 
 end
 

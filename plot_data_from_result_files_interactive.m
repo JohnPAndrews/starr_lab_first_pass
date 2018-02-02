@@ -823,6 +823,9 @@ function drawRaw_Callback(hObject, eventdata, handles)
 dat = handles.DatDrawRaw;
 rootdir = handles.rootDirName;
 patdir = sprintf('brpd_%s',dat.patient{1}(5:6));
+if strcmp(dat.patient{1}(5:6),'11')
+    patdir = 'brdy_11';
+end
 patdir = fullfile(rootdir, patdir);
 % find the raw data  
 possstrings = {'OR day','2 day','10 day',...

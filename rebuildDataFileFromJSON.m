@@ -111,8 +111,9 @@ for f = 1:length(ff)
         end
     end
 end
+%% plot tremor by severity 
 diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_006_tsk-dynamic_tremor';
-% diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_018_tsk-dynamic_tremor';
+diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_018_tsk-dynamic_tremor';
 fmf = findFilesBVQX(diruse,'*.mat'); 
 for f =1:length(fmf)
     load(fmf{f});
@@ -141,7 +142,7 @@ for a = 1:length(areasuse)
             'Visible','on',...
             'Color',[clrs(eventTable.code(s),:)  0.8],...
             'LineWidth',4);
-        legendttls{s} = sprintf('updrs %d',eventTable.code(s));
+        legendttls{s} = sprintf('tremor %d',eventTable.code(s));
     end
     xlim([5 30]);
     xlabel('Frequency (Hz)');
