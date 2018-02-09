@@ -251,10 +251,15 @@ else
 end
 % plot pac 
 
-params.PhaseFreqVector = 2:10:50;
-params.AmpFreqVector   = 5:10:80;
-params.useparfor   = 0;
-params.plotdata = 0;
+params.PhaseFreqVector      = 2:2:50;
+params.AmpFreqVector        = 2:4:100;
+params.PhaseFreq_BandWidth  = 4;
+params.AmpFreq_BandWidth    = 10;
+params.computeSurrogates    = 1;
+params.numsurrogate         = 100;
+params.alphause             = 0.05;
+params.plotdata             = 0;
+params.useparfor            = 1; % if true, user parfor, requires parallel computing toolbox
 params.regionnames = {'GPi','M1'} ;
  
 data(1,:) = lfp';
@@ -276,6 +281,6 @@ if params.plotdata
     close(hfig);
 end
 fnmsv = sprintf('pac_s-%0.3d_t-%s.mat',serial,tr.task{1});
-save(fullfile(resdir,fnmsv),'results');
+save(fullfile(resdir,fnmsv),'results','ttluse','tr');
 
 end
