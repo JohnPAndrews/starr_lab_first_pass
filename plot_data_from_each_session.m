@@ -265,11 +265,11 @@ params.regionnames = {'GPi','M1'} ;
 data(1,:) = lfp';
 data(2,:) = ecog';
 results = computePAC(data,tr.sr,params);
+ttluse = strrep(  sprintf('%dHz %s %s m-%s s-%s',tr.sr,tr.task{1},tr.ecog_elec{1},meds,stims) , '_', ' ');
 
 if params.plotdata
     % plotting
     hfig = gcf;
-    ttluse = strrep(  sprintf('%dHz %s %s m-%s s-%s',tr.sr,tr.task{1},tr.ecog_elec{1},meds,stims) , '_', ' ');
     suptitle(ttluse);
     set(findall(hfig,'-property','FontSize'),'FontSize',12)
     
