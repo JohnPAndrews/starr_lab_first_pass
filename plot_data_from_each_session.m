@@ -15,7 +15,7 @@ mkdir(resdir);
 
 load(fullfile(pn,[fn,ext]));
 % load(fullfile(pn,fn));
-for s = 1%:size(datTab,1)
+for s = 1:size(datTab,1)
 %     plot_psd(datTab(s,:),figdir,s); 
 %     plot_spectrogram(datTab(s,:),figdir,s); 
     plot_pac(datTab(s,:),figdir,resdir,s); 
