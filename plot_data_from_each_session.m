@@ -252,27 +252,27 @@ end
 params.PhaseFreqVector = 2:10:50;
 params.AmpFreqVector   = 5:10:80;
 params.useparfor   = 0;
-params.plotdata =1;
+params.plotdata = 0;
 params.regionnames = {'GPi','M1'} ;
  
 data(1,:) = lfp';
 data(2,:) = ecog';
 results = computePAC(data,tr.sr,params);
-hfig = gcf;
-ttluse = strrep(  sprintf('%dHz %s %s m-%s s-%s',tr.sr,tr.task{1},tr.ecog_elec{1},meds,stims) , '_', ' ');
-suptitle(ttluse);
 
-
-% plotting 
-set(findall(hfig,'-property','FontSize'),'FontSize',12)
-
-hfig.PaperPositionMode = 'manual';
-hfig.PaperSize = [14 8];
-hfig.PaperPosition = [0 0 14 8];
-fnmsv = sprintf('pac_s-%0.3d_t-%s.jpeg',serial,tr.task{1});
-print(hfig,fullfile(figdir,fnmsv),'-djpeg','-r200');
-close(hfig);
-
+if params.plotdata
+    % plotting
+    hfig = gcf;
+    ttluse = strrep(  sprintf('%dHz %s %s m-%s s-%s',tr.sr,tr.task{1},tr.ecog_elec{1},meds,stims) , '_', ' ');
+    suptitle(ttluse);
+    set(findall(hfig,'-property','FontSize'),'FontSize',12)
+    
+    hfig.PaperPositionMode = 'manual';
+    hfig.PaperSize = [14 8];
+    hfig.PaperPosition = [0 0 14 8];
+    fnmsv = sprintf('pac_s-%0.3d_t-%s.jpeg',serial,tr.task{1});
+    print(hfig,fullfile(figdir,fnmsv),'-djpeg','-r200');
+    close(hfig);
+end
 fnmsv = sprintf('pac_s-%0.3d_t-%s.mat',serial,tr.task{1});
 save(fullfile(resdir,fnmsv),'results');
 
