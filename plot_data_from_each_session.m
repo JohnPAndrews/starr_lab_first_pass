@@ -5,6 +5,8 @@ if ismac
 [pn,fn,ext] = fileparts('/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorg_manual/brdy_11/v03_10_day/data/dataBR.mat');
 addpath(genpath(fullfile('..','..','PAC')));
 elseif ~ismac & isunix
+    [pn,fn,ext] = fileparts('/home/starr/roee/BR_reorg_manual/brdy_11/v03_10_day/data/dataBR.mat');
+    addpath(genpath(fullfile('..','PAC')));
 end
 [rootdir,~] = fileparts(pn);
 figdir = fullfile(rootdir,'figures');
