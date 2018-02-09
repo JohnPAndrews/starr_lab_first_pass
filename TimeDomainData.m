@@ -148,5 +148,8 @@ classdef TimeDomainData
           ylabel('Power  (log_1_0\muV^2/Hz)');
           title('Max Bands Norm');    
       end
+      function hfig = plotSpectrogram(obj)
+          datdc = obj.dat - mean(obj.dat); 
+      end
    end
 end
