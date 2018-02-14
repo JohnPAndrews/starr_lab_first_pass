@@ -1,11 +1,19 @@
-function plot_data_from_each_session()
+function plot_data_from_each_session(varargin)
 % choose data folder 
 % [fn,pn,ext] = uigetfile();
 if ismac
-[pn,fn,ext] = fileparts('/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorg_manual/brdy_11/v03_10_day/data/dataBR.mat');
-addpath(genpath(fullfile('..','..','PAC')));
+    if nargin == 1 
+        [pn,fn,ext] = fileparts(varargin{1});
+    else
+        [pn,fn,ext] = fileparts('/Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorg_manual/brdy_11/v03_10_day/data/dataBR.mat');
+    end
+    addpath(genpath(fullfile('..','..','PAC')));
 elseif ~ismac & isunix
+    if nargin == 1 
+        [pn,fn,ext] = fileparts(varargin{1});
+    else
     [pn,fn,ext] = fileparts('/home/starr/roee/BR_reorg_manual/brdy_11/v03_10_day/data/dataBR.mat');
+    end
     addpath(genpath(fullfile('..','PAC')));
 end
 [rootdir,~] = fileparts(pn);
@@ -252,7 +260,7 @@ end
 % plot pac 
 
 params.PhaseFreqVector      = 2:2:50;
-params.AmpFreqVector        = 2:4:100;
+params.AmpFreqVector        = 2:4:120;
 params.PhaseFreq_BandWidth  = 4;
 params.AmpFreq_BandWidth    = 10;
 params.computeSurrogates    = 1;
