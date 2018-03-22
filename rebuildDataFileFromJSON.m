@@ -153,10 +153,10 @@ end
 areasuse = {'lfp','ecog'};
 clrs = ...
     [217,148,0;
-198,143,255;
-58,92,8;
-1,213,200]./256;
-clrs = parula(4); 
+    198,143,255;
+    58,92,8;
+    1,213,200]./256;
+clrs = parula(4);
 for a = 1:length(areasuse)
 
 [ttls,idx] = unique(legendttls);

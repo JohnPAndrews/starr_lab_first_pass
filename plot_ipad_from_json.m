@@ -31,7 +31,6 @@ else
     alligninfo = threshold_beep_finder(eegraw,brraw);
     save(fullfile(ipadir,'ipad_allign_info.mat'),'alligninfo');
 end
-
 %% detect movement from ipad beeps 
 ff = findFilesBVQX(ipadir,'*.json');
 if isempty(ff)

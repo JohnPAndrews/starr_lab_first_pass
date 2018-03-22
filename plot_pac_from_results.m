@@ -28,18 +28,22 @@ for aa = 1:length(results)
     zcom = results(aa).zComodulogram;
     idxover = zcom < -1.645 | zcom > 1.645;
     Com_reshaped(~idxover) = 0;
+    Com_reshaped(idxover) = 1;
     zmat = reshape(Com_reshaped, length(PhaseFreqVector), length(AmpFreqVector));
     % prctile 
     pmatuse = Com_Mat; 
     idxover = pmatuse >= prctile(MI_sur,99.5)';
     pmatuse(~idxover) = 0; 
+    pmatuse(idxover) = 1; 
     pmat = reshape(pmatuse, length(PhaseFreqVector), length(AmpFreqVector));
     % p-value 
     pmatvalsuse = Com_Mat;
     compMatrix = repmat(Com_Mat,[1 size(MI_sur,1) ])';
     pvals = 1-sum(double((compMatrix >= MI_sur)),1)./size(MI_sur,1);
     idxunder = pvals <= 0.05;
-    pmatvalsuse(~idxunder) = 0; 
+    [h,p] = fdr_bh(pvals,0.05,'pdep','yes');
+    pmatvalsuse(logical(~h)) = 0; 
+    pmatvalsuse(logical(h)) = 1; 
     pvalmat = reshape(pmatvalsuse, length(PhaseFreqVector), length(AmpFreqVector));
     
     
