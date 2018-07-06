@@ -12,6 +12,8 @@ params.PhaseFreq_BandWidth   = 8;
 params.AmpFreq_BandWidth   = 20;
 params.useparfor   = 0;
 params.regionnames = {'GPi','M1'};
+params.computeSurrogates = 0; 
+params.numsurrogate = 1;
 
 % change tremor name s
 % bernadet coupling betweeen 20-90hz - in data that filter. Berandet
@@ -19,6 +21,14 @@ params.regionnames = {'GPi','M1'};
 % Paul - on/off med 
 % only dyknesia - not tremor. 
 % michael egger - not that keen regarding upgrade 
+idxuse = [5 6];
+for d = 1:length(idxuse)
+    clear data;
+    data(1,:) = datTab.lfp{idxuse(d)};
+    data(2,:) = datTab.ecog{idxuse(d)};
+    pacres(d).res = computePAC(data,794,params);
+end
+save('/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/pac-results.mat','pacres');
 
 for d = [5 6 17 18]%1:size(datTab,1)
     clear data;
@@ -113,14 +123,15 @@ for f = 1:length(ff)
 end
 %% plot tremor by severity 
 diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_006_tsk-dynamic_tremor';
-diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_018_tsk-dynamic_tremor';
+% diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_018_tsk-dynamic_tremor';
 fmf = findFilesBVQX(diruse,'*.mat'); 
 for f =1:length(fmf)
     load(fmf{f});
 end
-
 % plot treemory by severity  
 hfig = figure;
+set(hfig,'color','w');
+
 areasuse = {'lfp','ecog'};
 clrs = ...
     [217,148,0;
@@ -165,6 +176,22 @@ legend(hlines(idx,2),ttls);
 set(hsub(1),'FontSize',16)
 set(hsub(2),'FontSize',16)
 end
+
+title(hsub(1),'GPi');
+title(hsub(2),'M1');
+% printing 
+hfig.PaperPositionMode = 'manual';
+hfig.Units = 'centimeters';
+hfig.PaperSize = [12 12*0.75];
+hfig.PaperPosition = [ 0 0 12 12*0.75];
+% save as pdf
+fn = 'time-domain-data.pdf';
+pn = '/Users/roee/Starr_Lab_Folder/Presenting/Talks/2018_05_DBS_think_tank/figures';
+fnmsave = fullfile(pn, fn);
+print(hfig,fnmsave,'-dpdf');
+% close(hfig);
+
+
 %% look at beta filter over time 
 
 
@@ -312,13 +339,18 @@ plot((lags./794).*1000,r);
 ylabel('r value');
 xlabel('time (msecs)');
 
+%% plot figure for Brain Initiative figure 
 
 %% plot rms along signal, in 1 sec, non overlapping blocks  
+
 clear all
+load('/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/pac-results.mat','pacres');
+
 addpath(genpath('/Users/roee/Starr_Lab_Folder/Data_Analysis/First_Pass_Data_Analysis/code/toolboxes/notBoxPlot'));
 diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_006_tsk-dynamic_tremor';
-diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_018_tsk-dynamic_tremor';
-diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_002_tsk-dynamic_tremor';
+addpath(genpath(fullfile('..','..','PAC')));
+% diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_018_tsk-dynamic_tremor';
+% diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_002_tsk-dynamic_tremor';
 fmf = findFilesBVQX(diruse,'*.mat'); 
 for f =1:length(fmf)
     load(fmf{f});
@@ -362,7 +394,195 @@ for a = 1:length(areasuse)
     end
 end
 
-jump = 1; % jump in secs 
+jump = 2; % jump in secs 
+start = 13.08;
+curmark = start; 
+secseegadjus = secseeg - adjustsecs;
+cnt = 1;
+clear datout
+datcoher(1,:) = brraw.ecog;
+datcoher(2,:) = brraw.lfp;
+while curmark < max(secs) - jump
+    % br data 
+    idxusebr  = secs > curmark & secs < curmark + jump; 
+    idxuseeeg  = secseegadjus > curmark & secseegadjus < curmark + jump; 
+    if length(unique(updrsvec(1,idxusebr)))==1
+        if  unique(updrsvec(1,idxusebr)) ~=0
+            datout.betafilt(cnt,1) = rms(betafilt(1,idxusebr));
+            datout.betafilt(cnt,2) = rms(betafilt(2,idxusebr));
+            datout.env(cnt,1) = rms(up(1,idxusebr));
+            datout.env(cnt,2) = rms(up(2,idxusebr));
+            
+            datout.sums(cnt,1) = sum(abs(up(1,idxusebr)));
+            datout.sums(cnt,2) = sum(abs(up(2,idxusebr)));
+            
+            % coherence 
+            [Cxy,F] = mscohere(datcoher(1,idxusebr),datcoher(2,idxusebr),...
+                2^(nextpow2(500)),...
+                2^(nextpow2(500/2)),...
+                2^(nextpow2(500)),...
+                794);
+            
+            datout.chr(cnt,1) = mean(Cxy(7:14)); 
+            
+            % eeg
+            datout.erg1(cnt,1) = rms(ergs(1,idxuseeeg));
+            datout.erg2(cnt,2) = rms(ergs(2,idxuseeeg));
+            % updrs
+            datout.updrs(cnt) = unique(updrsvec(1,idxusebr));
+            datout.colors(cnt,:) = clrs( datout.updrs(cnt),:);
+            cnt = cnt + 1;
+        end
+    end
+    curmark = curmark + jump;  
+end
+hfig = figure('Position',[517         518        1136         756]);
+hsub(1) = subplot(2,3,1); 
+notBoxPlot(datout.env(:,1),datout.updrs)
+xlabel('tremor scores');
+ylabel('rms'); 
+title(sprintf('GPi rms of env in %0.2f sec blocks',jump))
+title(sprintf('GPi - response to tremor',jump))
+hsub(1).FontSize = 20; 
+
+hsub(2) = subplot(2,3,2); 
+notBoxPlot(datout.env(:,2),datout.updrs)
+xlabel('tremor scores');
+ylabel('rms'); 
+title(sprintf('M1 rms of env in %0.2f sec blocks',jump))
+title(sprintf('M1 graded resopnse to tremor',jump))
+hsub(2).FontSize = 20; 
+
+
+hsub(2) = subplot(2,3,3); 
+notBoxPlot(datout.chr,datout.updrs)
+xlabel('tremor scores');
+ylabel('Magnitude-squared coherence'); 
+title(sprintf('Coherence between M1 and GPi %0.2f sec blocks',jump))
+title(sprintf('Coherence between M1 and GPi',jump))
+hsub(2).FontSize = 20; 
+
+% plot pac 
+
+hsub(2) = subplot(2,3,4); 
+% plot pac results for movevent between, 
+pr = pacres(1).res(1); 
+contourf(pr.PhaseFreqVector+pr.PhaseFreq_BandWidth/2,pr.AmpFreqVector+pr.AmpFreq_BandWidth/2,pr.Comodulogram',30,'lines','none')
+set(gca,'fontsize',14)
+ttly = sprintf('Amplitude Frequency %s (Hz)','GPi');
+ylabel(ttly)
+ttlx = sprintf('Phase Frequency %s (Hz)','GPi');
+xlabel(ttlx)
+title('PAC during tremor within');
+hsub(2).FontSize = 20; 
+
+
+hsub(2) = subplot(2,3,5); 
+% plot pac results for movevent between, 
+pr = pacres(1).res(4); 
+contourf(pr.PhaseFreqVector+pr.PhaseFreq_BandWidth/2,pr.AmpFreqVector+pr.AmpFreq_BandWidth/2,pr.pvals',30,'lines','none')
+set(gca,'fontsize',14)
+ttly = sprintf('Amplitude Frequency %s (Hz)','M1');
+ylabel(ttly)
+ttlx = sprintf('Phase Frequency %s (Hz)','GPi');
+xlabel(ttlx)
+title('PAC during tremor between');
+hsub(2).FontSize = 20; 
+
+hsub(2) = subplot(2,3,6); 
+% plot pac results for movevent between, 
+pr = pacres(2).res(4); 
+contourf(pr.PhaseFreqVector+pr.PhaseFreq_BandWidth/2,pr.AmpFreqVector+pr.AmpFreq_BandWidth/2,pr.pvals',30,'lines','none')
+set(gca,'fontsize',14)
+ttly = sprintf('Amplitude Frequency %s (Hz)','M1');
+ylabel(ttly)
+ttlx = sprintf('Phase Frequency %s (Hz)','GPi');
+xlabel(ttlx)
+title('PAC during movement between');
+hsub(2).FontSize = 20; 
+
+
+
+
+hfig.PaperPositionMode = 'manual';
+hfig.PaperSize = [20 10.008];
+hfig.PaperPosition = [ 0 0 20 10.008];
+
+dirname = '/Users/roee/Starr_Lab_Folder/Presenting/Posters/Gilron_DBS_2018/figures';
+% save as figure 
+fn = 'TremorResults2pvals.fig';
+saveas(hfig,fullfile(dirname,fn));
+% save as pdf 
+fn = 'TremorResults2pvals.pdf';
+fnmsave = fullfile(dirname, fn); 
+print(hfig,fnmsave,'-dpdf');
+% close(hfig);
+
+
+
+% addpath(genpath('/Users/roee/Starr_Lab_Folder/Data_Analysis/PAC'));
+% datcoher(1,:) = brraw.lfp;
+% datcoher(2,:) = brraw.ecog;
+% 
+% params.PhaseFreqVector = 3:3:30; % for some reason peak apppears positive if its chopped at 30.
+% params.AmpFreqVector   = 3:3:30;
+% params.PhaseFreq_BandWidth   = 8;
+% params.AmpFreq_BandWidth   = 20;
+% params.useparfor   = 0;
+% params.regionnames = {'GPi','M1'};
+% params.plotdata =1;
+% pacresults = computePAC(datcoher(:,794*10:end),794,params);
+
+%% plot rms along signal, in 1 sec, non overlapping blocks  
+clear all
+addpath(genpath('/Users/roee/Starr_Lab_Folder/Data_Analysis/First_Pass_Data_Analysis/code/toolboxes/notBoxPlot'));
+diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_006_tsk-dynamic_tremor';
+% diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_018_tsk-dynamic_tremor';
+% diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_002_tsk-dynamic_tremor';
+fmf = findFilesBVQX(diruse,'*.mat'); 
+for f =1:length(fmf)
+    load(fmf{f});
+end
+
+bpuse(1,:) = [ 7 12];% gpi 
+bpuse(2,:) = [ 7 14];% ecog 
+bpeeg = designfilt('bandpassiir',...
+    'FilterOrder',4, ...
+    'HalfPowerFrequency1',4,...
+    'HalfPowerFrequency2',7, ...
+    'SampleRate',794);
+
+clrs = parula(4); 
+clear betafilt up ergs dat updrsvec
+areasuse = {'lfp','ecog'};
+for a = 1:length(areasuse)
+    title(areasuse{a});
+    hold on; 
+    dat = brraw.(areasuse{a});
+    updrsvec(a,:) = zeros(1,size(dat,1));
+    secs = (1:length(dat))./794; 
+    secseeg = (1:length(eegraw.Erg1))./2048; 
+    bp = designfilt('bandpassiir',...
+        'FilterOrder',4, ...
+        'HalfPowerFrequency1',bpuse(a,1),...
+        'HalfPowerFrequency2',bpuse(a,2), ...
+        'SampleRate',794);
+    betafilt(a,:) = filtfilt(bp,dat);
+    [uptemp, low ]= envelope(betafilt(a,:),794*8,'analytic'); % analytic rms
+%     [uptemp, low ]= abs(hilbert(betafilt(a,:),794*8); % analytic rms
+    up(a,:) = uptemp(1,:);
+    % eeg 
+    ergs(1,:) = filtfilt(bpeeg, double(eegraw.Erg1) );
+    ergs(2,:) = filtfilt(bpeeg, double(eegraw.Erg2) );
+    adjustsecs = eventTable.latency(1)/2048 - eventTable.beepIdxBR(1)/794;
+    
+    for s = 1:size(eventTable,1)-1
+        idxbr = eventTable.beepIdxBR(s):1:eventTable.beepIdxBR(s+1) ;
+        updrsvec(a,idxbr) = eventTable.code(s);        
+    end
+end
+
+jump = 3; % jump in secs 
 start = 13.08;
 curmark = start; 
 secseegadjus = secseeg - adjustsecs;
@@ -408,26 +628,123 @@ ylabel('rms');
 title(sprintf('M1 rms of env in %0.2f sec blocks',jump))
 hsub(2).FontSize = 16; 
 
-hsub(3) = subplot(3,2,3); 
+%% plot rms along signal, in 1 sec, non overlapping blocks  
+clear all
+addpath(genpath('/Users/roee/Starr_Lab_Folder/Data_Analysis/First_Pass_Data_Analysis/code/toolboxes/notBoxPlot'));
+diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_006_tsk-dynamic_tremor';
+% diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_018_tsk-dynamic_tremor';
+% diruse = '/Users/roee/Starr_Lab_Folder/Data_Analysis/1_tremor_visit/data/br_raw/s_002_tsk-dynamic_tremor';
+fmf = findFilesBVQX(diruse,'*.mat'); 
+for f =1:length(fmf)
+    load(fmf{f});
+end
+
+bpuse(1,:) = [ 7 12];% gpi 
+bpuse(2,:) = [ 7 14];% ecog 
+bpeeg = designfilt('bandpassiir',...
+    'FilterOrder',4, ...
+    'HalfPowerFrequency1',4,...
+    'HalfPowerFrequency2',7, ...
+    'SampleRate',794);
+
+clrs = parula(4); 
+clear betafilt up ergs dat updrsvec
+areasuse = {'lfp','ecog'};
+for a = 1:length(areasuse)
+    title(areasuse{a});
+    hold on; 
+    dat = brraw.(areasuse{a});
+    updrsvec(a,:) = zeros(1,size(dat,1));
+    secs = (1:length(dat))./794; 
+    secseeg = (1:length(eegraw.Erg1))./2048; 
+    bp = designfilt('bandpassiir',...
+        'FilterOrder',4, ...
+        'HalfPowerFrequency1',bpuse(a,1),...
+        'HalfPowerFrequency2',bpuse(a,2), ...
+        'SampleRate',794);
+    betafilt(a,:) = filtfilt(bp,dat);
+    [uptemp, low ]= envelope(betafilt(a,:),794*8,'analytic'); % analytic rms
+%     [uptemp, low ]= abs(hilbert(betafilt(a,:),794*8); % analytic rms
+    up(a,:) = uptemp(1,:);
+    % eeg 
+    ergs(1,:) = filtfilt(bpeeg, double(eegraw.Erg1) );
+    ergs(2,:) = filtfilt(bpeeg, double(eegraw.Erg2) );
+    adjustsecs = eventTable.latency(1)/2048 - eventTable.beepIdxBR(1)/794;
+    
+    for s = 1:size(eventTable,1)-1
+        idxbr = eventTable.beepIdxBR(s):1:eventTable.beepIdxBR(s+1) ;
+        updrsvec(a,idxbr) = eventTable.code(s);        
+    end
+end
+
+jump = 0.2; % jump in secs 
+start = 13.08;
+curmark = start; 
+secseegadjus = secseeg - adjustsecs;
+cnt = 1;
+clear datout
+while curmark < max(secs) - jump
+    % br data 
+    idxusebr  = secs > curmark & secs < curmark + jump; 
+    idxuseeeg  = secseegadjus > curmark & secseegadjus < curmark + jump; 
+    if length(unique(updrsvec(1,idxusebr)))==1
+        if  unique(updrsvec(1,idxusebr)) ~=0
+            datout.betafilt(cnt,1) = rms(betafilt(1,idxusebr));
+            datout.betafilt(cnt,2) = rms(betafilt(2,idxusebr));
+            datout.env(cnt,1) = rms(up(1,idxusebr));
+            datout.env(cnt,2) = rms(up(2,idxusebr));
+            
+            datout.sums(cnt,1) = sum(abs(up(1,idxusebr)));
+            datout.sums(cnt,2) = sum(abs(up(2,idxusebr)));
+
+            % eeg
+            datout.erg1(cnt,1) = rms(ergs(1,idxuseeeg));
+            datout.erg2(cnt,2) = rms(ergs(2,idxuseeeg));
+            % updrs
+            datout.updrs(cnt) = unique(updrsvec(1,idxusebr));
+            datout.colors(cnt,:) = clrs( datout.updrs(cnt),:);
+            cnt = cnt + 1;
+        end
+    end
+    curmark = curmark + jump;  
+end
+hfig = figure('Position',[517         518        1136         756]);
+set(hfig,'color','w');
+nrow = 2; ncol = 2; nplt =1; 
+hsub(1) = subplot(nrow,ncol,nplt); nplt = nplt +1; 
+notBoxPlot(datout.env(:,1),datout.updrs)
+xlabel('tremor scores');
+ylabel('rms'); 
+title(sprintf('Pallidum rms of env in %0.2f sec blocks',jump))
+hsub(1).FontSize = 16; 
+
+hsub(2) = subplot(nrow,ncol,nplt); nplt = nplt +1; 
+notBoxPlot(datout.env(:,2),datout.updrs)
+xlabel('tremor scores');
+ylabel('rms'); 
+title(sprintf('M1 rms of env in %0.2f sec blocks',jump))
+hsub(2).FontSize = 16; 
+
+hsub(3) = subplot(nrow,ncol,nplt); nplt = nplt +1; 
 hold on; 
 for s = 1:size(datout.env,1)
 scatter(datout.env(s,1),datout.env(s,2),50,...
     'filled','MarkerFaceColor',  datout.colors(s,:),...
     'MarkerFaceAlpha',0.7);
 end
-xlabel('GPi rms of envelope');
+xlabel('Pallidum rms of envelope');
 ylabel('M1'); 
 title('RMS of envelope gpi/m1')
 hsub(3).FontSize = 16; 
 
-hsub(4) = subplot(3,2,4); 
+hsub(4) = subplot(nrow,ncol,nplt); nplt = nplt +1; 
 notBoxPlot(datout.erg2(:,2),datout.updrs)
-xlabel('updrs scores');
+xlabel('tremor scores');
 ylabel('rms'); 
-title(sprintf('erg1 rms of env in %0.2f sec blocks',jump))
+title(sprintf('Actigraphy rms of env in %0.2f sec blocks',jump))
 hsub(4).FontSize = 16; 
-
-hsub(5) = subplot(3,2,5); 
+%%
+hsub(5) = subplot(nrow,ncol,nplt); nplt = nplt +1; 
 hold on; 
 for s = 1:size(datout.env,1)
 scatter(datout.erg2(s,2),datout.env(s,1),50,...
@@ -439,7 +756,7 @@ ylabel('Erg1 rms of envelope');
 title('rms of erg1 vs GPi')
 hsub(5).FontSize = 16; 
 
-hsub(6) = subplot(3,2,6); 
+hsub(6) = subplot(nrow,ncol,nplt); nplt = nplt +1; 
 hold on; 
 for s = 1:size(datout.env,1)
 scatter(datout.erg2(s,2),datout.env(s,2),50,...
@@ -451,18 +768,76 @@ ylabel('Erg1 rms of envelope');
 title('rms of erg1 vs M1')
 hsub(6).FontSize = 16; 
 
+% make figure of just correlation with accelation 
 hfig = figure;
+set(hfig,'color','w');
 hold on; 
 for s = 1:size(datout.env,1)
-scatter3(datout.erg1(s,1),datout.env(s,2),datout.env(s,1),50,...
+scatter3(datout.erg1(s,1),datout.env(s,2),datout.env(s,1),200,...
     'filled','MarkerFaceColor',  datout.colors(s,:),...
-    'MarkerFaceAlpha',0.7);
+    'MarkerFaceAlpha',0.9);
 end
-xlabel('M1 rms of envelope');
-ylabel('Erg1 rms of envelope');
+MZ=fit(datout.erg1(s,1),datout.env(s,2),fittype({'x'}));
+XXview([0 90])
+[r p] = corrcoef(datout.erg1(:,1),datout.env(:,2));
+xlim([-100 4e3]);
+ylim([0.005 0.016]);
+
+xlabel('M1 10Hz (rms of envelope)');
+ylabel('Actigraphy (rms of envelope)');
 zlabel('GPi rms of envelope');
-title('rms of erg1 vs M1')
+title('Actigraphy correlates with M1 10Hz power')
 set(gca,'FontSize',16);
+
+% printing 
+hfig.PaperPositionMode = 'manual';
+hfig.Units = 'centimeters';
+w = 20; h = 20*0.75;
+hfig.PaperSize = [w h ];
+hfig.PaperPosition = [ 0 0 w h];
+% save as pdf
+fn = 'tremorSession.pdf';
+pn = '/Users/roee/Starr_Lab_Folder/Presenting/Talks/2018_05_DBS_think_tank/figures';
+fnmsave = fullfile(pn, fn);
+print(hfig,fnmsave,'-dpdf');
+% close(hfig);
+
+
+
+%% plot r as a reslut of second 
+start = 13.08;
+curmark = start; 
+secseegadjus = secseeg - adjustsecs;
+jumpvec = (0.5 : 0.5 : 10);
+for j = 1:length(jumpvec)
+    curmark = start; 
+    jump = jumpvec(j); 
+    cnt = 1; 
+    clear datout 
+    datout = struct();
+    while curmark < (max(secs) - jump)
+        % br data
+        idxusebr  = secs > curmark & secs < curmark + jump;
+        idxuseeeg  = secseegadjus > curmark & secseegadjus < curmark + jump;
+        datout.betafilt(cnt,1) = rms(betafilt(1,idxusebr));
+        datout.betafilt(cnt,2) = rms(betafilt(2,idxusebr));
+        datout.env(cnt,1) = rms(up(1,idxusebr));
+        datout.env(cnt,2) = rms(up(2,idxusebr));
+        
+        datout.sums(cnt,1) = sum(abs(up(1,idxusebr)));
+        datout.sums(cnt,2) = sum(abs(up(2,idxusebr)));
+        
+        % eeg
+        datout.erg1(cnt,1) = rms(ergs(1,idxuseeeg));
+        datout.erg2(cnt,2) = rms(ergs(2,idxuseeeg));
+        cnt = cnt + 1;
+        curmark = curmark + jump;
+    end
+    [r p] = corrcoef(datout.erg1(:,1),datout.env(:,2));
+    rs(j) = r(1,2); 
+    ps(j) = p(1,2);
+    fprintf('j is %f\n',jump); 
+end
 %% plot mask 
 % 1. power of scatter in gpi vs m1 
 

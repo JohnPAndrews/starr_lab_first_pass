@@ -192,24 +192,36 @@ for s = 1:size(datTab,1)
         tmpth = preproc_dc_offset_high_pass(tmpt,params);
         preproc.(areas{a}) = tmpth;
     end
-    resTab.visit{s} = visitstr; 
-    %% coherence
-    [Cxy,F] = mscohere(preproc.ecog,preproc.lfp,...
-        2^(nextpow2(datTab.sr(s))),...
-        2^(nextpow2(datTab.sr(s)/2)),...
-        2^(nextpow2(datTab.sr(s))),...
-        datTab.sr(s));
-    idxplot = F > 0 & F < 100;
-    resTab.coherfreq{s} = F;
-    resTab.cpherpower{s} = Cxy;
-    %% psd
-    [fftOut,f] = pwelch(preproc.ecog,datTab.sr(s),datTab.sr(s)/2,1:round(datTab.sr(s))/2,datTab.sr(s),'psd');
-    resTab.psdecogF{s} = f;
-    resTab.psdecog{s} = fftOut;
-    
-    [fftOut,f] = pwelch(preproc.lfp,datTab.sr(s),datTab.sr(s)/2,1:round(datTab.sr(s))/2,datTab.sr(s),'psd');
-    resTab.psdlfpF{s} = f;
-    resTab.psdlfp{s} = fftOut;
+    resTab.visit{s} = '2 year'; % XXXX
+    try
+        %% coherence
+        [Cxy,F] = mscohere(preproc.ecog,preproc.lfp,...
+            2^(nextpow2(datTab.sr(s))),...
+            2^(nextpow2(datTab.sr(s)/2)),...
+            2^(nextpow2(datTab.sr(s))),...
+            datTab.sr(s));
+        idxplot = F > 0 & F < 100;
+        resTab.coherfreq{s} = F;
+        resTab.cpherpower{s} = Cxy;
+        %% psd
+        [fftOut,f] = pwelch(preproc.ecog,datTab.sr(s),datTab.sr(s)/2,1:round(datTab.sr(s))/2,datTab.sr(s),'psd');
+        resTab.psdecogF{s} = f;
+        resTab.psdecog{s} = fftOut;
+        
+        [fftOut,f] = pwelch(preproc.lfp,datTab.sr(s),datTab.sr(s)/2,1:round(datTab.sr(s))/2,datTab.sr(s),'psd');
+        resTab.psdlfpF{s} = f;
+        resTab.psdlfp{s} = fftOut;
+    catch        %% coherence
+        resTab.coherfreq{s} = [];
+        resTab.cpherpower{s} = Cxy;
+        %% psd
+        resTab.psdecogF{s} = [];
+        resTab.psdecog{s} = [];
+        
+        resTab.psdlfpF{s} = [];
+        resTab.psdlfp{s} = [];
+
+    end
     
     skipthis = 1;
     if ~skipthis

@@ -11,7 +11,7 @@ marg_h = 0.1;
 marg_w = 0.1;
 
 % save data 
-for p = [5:8]%2:length(patdir)
+for p = [8]%2:length(patdir)
     rcnt = 1; 
     [pn,patstr] = fileparts(patdir{p});
     visitdir = findFilesBVQX(patdir{p},'v*',struct('dirs',1,'depth',1));
@@ -73,6 +73,7 @@ for p = [5:8]%2:length(patdir)
     save(fullfile(resdir,sprintf('%s_spectrogram.mat',patstr)),'results');
 
 end
+return 
 %% 
 % make different color map for z positive and z negative 
 %% 

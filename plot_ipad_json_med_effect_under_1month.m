@@ -2,6 +2,7 @@ function plot_ipad_json_med_effect_under_1month()
 pats = [3 5];
 pats = [3 5 6 7 9 10];
 pats = [6];
+pats = [10];
 % pats = [7 ];
 % med effects
 meds  = {'off','on'};
@@ -9,7 +10,7 @@ handles.freq = [22 28; 100 120];
 handles.name = {'beta', 'gama'};
 figdir = fullfile('..','figures','ipad_figures_from_json','freq_patches');
 resdir = fullfile('..','results','ipad_from_json_results');
-a = 1; % 2 = motor cortex area 1= stn / lfp / gpi 
+a = 2; % 2 = motor cortex area 1= stn / lfp / gpi 
 if a == 1 
     area = 'stn';
 else

@@ -1,5 +1,5 @@
 function plot_brpd10_montage_counting()
-load /Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorg_manual/brpd_10/v09_06_mnt/data/results/resultsBR.mat
+load /Users/roee/Starr_Lab_Folder/Data_Analysis/Raw_Data/BR_reorg_manual/brpd_10/v09_extra_visit/data/results/resultsBR.mat
 idxuse = cellfun(@(x) strcmp(x,'montage'),resTab.task); 
 resTab = resTab(idxuse,:);
 resTabRest = resTab(resTab.sessionum ==6,:);

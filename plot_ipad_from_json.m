@@ -9,8 +9,8 @@ elseif nargin ==2
     plottt0data = varargin{2};
 end
 %% set params
-params.timeBeforeEvent = 4; % in sec
-params.timeAfterEvent  = 4; % in ses
+params.timeBeforeEvent = 3; % in sec
+params.timeAfterEvent  = 3; % in ses
 params.beepToGoCue     = 6;
 %% load data 
 addpath(genpath(fullfile(pwd,'from_nicki')));
