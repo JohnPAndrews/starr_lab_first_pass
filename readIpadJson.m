@@ -17,7 +17,12 @@ timeDat.date = datetrial;
 timeDat.patname = fn(1:end-20);
 
 jsonstruc = loadjson(jsonfn,'SimplifyCell',0);
-jsonstruc = jsonstruc';
+if size(jsonstruc,1) > size(jsonstruc,2)
+    
+else
+    jsonstruc = jsonstruc';
+end
+
 for i = 1:size(jsonstruc,1)
     description{i} = jsonstruc{i,1}{1,1};
     timestamp(i) = str2double(jsonstruc{i,1}{1,2});

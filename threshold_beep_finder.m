@@ -40,7 +40,7 @@ eegraw = varargin{1};
 rawfnms = fieldnames(eegraw);
 idxchoose = cellfun(@(x) ~any(strfind(x,'srate')),rawfnms);
 rawfnms = rawfnms(idxchoose);
-handles.eeg_xlims = [0.5 20]; 
+handles.eeg_xlims = [0.5 40]; 
 % set pop up values 
 handles.channel_select_eeg.String = rawfnms;
 handles.channel_select_eeg.Value = 1;
@@ -68,8 +68,12 @@ handles.ecogThresh = 2;
 handles.eegdat = eegraw; 
 handles.ecogdat =  bruse;
 handles.ecogTempSr = bruse.srate;
-handles.eegSR = eegraw.srate;
+handles.eegSR = eegraw.dbs5hzemgsrate;
+handles.eegdat.srate = eegraw.dbs5hzemgsrate;
 
+% set band pass settings
+handles.bpecog = 0; 
+handles.bpeeg = 0; 
 % set ouptput 
 handles.output = [];
 % Update handles structure
@@ -180,7 +184,7 @@ xlimsuse = handles.axEEG.XLim;
 secs = [1:length(datause)]./handles.eegSR; 
 idxuse = secs > xlimsuse(1) & secs < xlimsuse(2);
 [pksuse,locuse,~,~] = findpeaks(datause(idxuse),secs(idxuse),...
-    'MinPeakDistance',0.3,...
+    'MinPeakDistance',0.15,...
     'MinPeakHeight', handles.hThreshEEG.YData(1) );
 
 
@@ -391,15 +395,18 @@ rawfnms = handles.channel_select_eeg.String;
 idx = handles.channel_select_eeg.Value; 
 datplot = handles.eegdat.(rawfnms{idx}); 
 
-bp1 = str2num(handles.LowerBPeeg.String);
-bp2 = str2num(handles.upperBPeegData.String);
-bp = designfilt('bandpassiir',...
-    'FilterOrder',4, ...
-    'HalfPowerFrequency1',bp1,...
-    'HalfPowerFrequency2',bp2, ...
-    'SampleRate',handles.eegdat.srate);
-
-datplot = filtfilt(bp,double(datplot));
+if handles.bpeeg
+    bp1 = str2num(handles.LowerBPeeg.String);
+    bp2 = str2num(handles.upperBPeegData.String);
+    bp = designfilt('bandpassiir',...
+        'FilterOrder',4, ...
+        'HalfPowerFrequency1',bp1,...
+        'HalfPowerFrequency2',bp2, ...
+        'SampleRate',handles.eegdat.srate);
+    datplot = filtfilt(bp,double(datplot));
+else
+    datplot = datplot; 
+end
 
 handles.datPlotEEG = zscore(datplot);
 secs = [1:length(datplot)]./handles.eegSR; 
@@ -439,14 +446,18 @@ rawfnms = handles.channel_select_ecog.String;
 idx = handles.channel_select_ecog.Value; 
 datplot = handles.ecogdat.(rawfnms{idx}); 
 
-bp1 = str2num(handles.LowerBPEcogdata.String);
-bp2 = str2num(handles.upperBPecogData.String);
-bp = designfilt('bandpassiir',...
-    'FilterOrder',4, ...
-    'HalfPowerFrequency1',bp1,...
-    'HalfPowerFrequency2',bp2, ...
-    'SampleRate',handles.ecogTempSr);
-datplot = filtfilt(bp,double(datplot));
+if handles.bpecog
+    bp1 = str2num(handles.LowerBPEcogdata.String);
+    bp2 = str2num(handles.upperBPecogData.String);
+    bp = designfilt('bandpassiir',...
+        'FilterOrder',4, ...
+        'HalfPowerFrequency1',bp1,...
+        'HalfPowerFrequency2',bp2, ...
+        'SampleRate',handles.ecogTempSr);
+    datplot = filtfilt(bp,double(datplot));
+else
+    datplot = datplot; 
+end
 
 handles.datPlotECOG = zscore(datplot);
 secs = [1:length(datplot)]./handles.ecogTempSr; 
@@ -569,13 +580,18 @@ guidata(gcf, handles);
 
 % --- Executes on button press in BandPassEEG.
 function BandPassEEG_Callback(hObject, eventdata, handles)
+handles = guidata(gcf); 
+handles.bpeeg = 1; 
+guidata(gcf,handles);
+
 
 % --- Executes on button press in BandPassECOGdata.
 function BandPassECOGdata_Callback(hObject, eventdata, handles)
-
+handles = guidata(gcf); 
+handles.bpecog = 1; 
+guidata(gcf,handles);
 
 function LowerBPeeg_Callback(hObject, eventdata, handles)
-
 
 function LowerBPeeg_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
@@ -599,9 +615,7 @@ function LowerBPEcogdata_Callback(hObject, eventdata, handles)
 
 % --- Executes during object creation, after setting all properties.
 function LowerBPEcogdata_CreateFcn(hObject, eventdata, handles)
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+
 
 function upperBPecogData_Callback(hObject, eventdata, handles)
 

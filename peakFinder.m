@@ -287,6 +287,18 @@ switch methuse
             'MinPeakDistance',mindistnace,...
             'MinPeakHeight', thresh);
     case 'bounds'
+        [pksuse,locuse,~,~] = findpeaks(dat,secs,...
+            'MinPeakDistance',mindistnace,...
+            'MinPeakHeight', thresh);
+
+        upper = handles.hThreshLine.YData(1);
+        lower = handles.hThreshLineLower.YData(2); 
+        dattemp = dat; 
+        dattemp(dat<lower) = 0; 
+        dattemp(dat>lower) = 1; 
+        idxuseBounds = find(diff(dattemp)==1);
+        locuse = secs(idxuseBounds);
+        pksuse = repmat(lower,length(locuse),1);
 end
 
 % remove ecog 
@@ -338,9 +350,12 @@ function hMarkBeeps_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in hExcludeMarked.
 function hExcludeMarked_Callback(hObject, eventdata, handles)
-% hObject    handle to hExcludeMarked (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+handles = guidata(gcf); 
+datuse = [handles.scatterecog.UserData];
+delete(handles.scatterecog(logical(datuse)));
+handles.scatterecog = handles.scatterecog(~logical(datuse));
+handles.locuse = handles.locuse(~logical(datuse));
+guidata(gcf,handles);
 
 
 % --- Executes on button press in hDone.
@@ -599,5 +614,3 @@ if handles.hThreshLine.YData(1) > maxdat
     handles.hThreshLine.YData = [maxdat maxdat].*0.8;
 end
 handles.hAxes.YLim = [mindat *1.1 maxdat * 1.1];
-
-
